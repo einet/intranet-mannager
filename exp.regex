@@ -1,0 +1,1 @@
+^(ls|yum|top|wget|cat|find|tail|date|hostname|tar|free|df|du)( )*.*|^sysctl( )*vm\.drop_caches=1|^killall( )*(find|tail|cat|Waiter|du)( )*|^set( )*.*(host( )*.*)|^\.\/Waiter( )*.*$

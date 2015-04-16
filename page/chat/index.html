@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>查询服务器信息</title>
+    <meta charset="utf-8">
+    <link href="css/ui-lightness/jquery-ui-1.10.4.css" rel="stylesheet">
+      
+	<script src="js/jquery-1.10.2.js"></script>
+	<script src="js/jquery-ui-1.10.4.js"></script>
+	<script src="js/jquery.base64.js"></script>
+	<script src="../lib/jquery.json-2.3.min.js"></script>	
+	<script src="../lib/json-to-table.js"></script>
+	<link type="text/css" href="jquery.ui.chatbox.css" rel="stylesheet" />
+    <script type="text/javascript" src="jquery.ui.chatbox.js"></script>
+    <script type="text/javascript" src="js/jquery-cookie.js"></script>
+    <script type="text/javascript" src="../lib/jquery.dialogextend.js"></script>
+    <link rel="stylesheet" href="css/ui-darkness/jquery-ui.min.css">
+	<link rel="stylesheet" href="menu.css" type="text/css" media="screen" />
+	<link rel="stylesheet" href="css/normalize.css">
+	<link rel="stylesheet" href="css/style.css" media="screen" type="text/css" />
+    <style>
+      body{
+	background: rgb(255, 255, 255) url(../pic/left.png) repeat-y;
+      }
+      .checkall1 {float: right;top:115px;margin-top: 5px}
+    </style>
+ 
+ <!--[if IE 6]>
+<style>
+body {behavior: url("csshover3.htc");}
+#menu li .drop {background:url("img/drop.gif") no-repeat right 8px; 
+</style>
+<![endif]-->
+    <script type="text/javascript">
+ String.prototype.trim= function(){  
+    // 用正则表达式将前后空格  
+    // 用空字符串替代。  
+    return this.replace(/(^\s*)|(\s*$)/g, "");  
+}
+function choicehost()
+{
+	opendialog('选择对话主机：点击圆圈展开节点，双击文字标签选择对话主机','<iframe src="../choicehost.html" width="100%" height="100%" frameborder="0"></iframe>');
+}
+function queryuploadfile(id,user,msg)
+{
+	$.post("/chat/sendmsg.asp",$.toJSON({sendmsg:"set host clear"}),function(result)
+	{      
+	  $.post("/chat/sendmsg.asp",$.toJSON({sendmsg:"set host "+$.cookie('webhostname')}),function(result)
+	  {   
+		$("#log").append(id + " 查询:<br/> &nbsp;&nbsp;&nbsp;&nbsp;" + msg + "<br/>");
+      $("#log").animate({ scrollTop: $("#log").prop("scrollHeight")}, 600 );
+      $("#chat_div").chatbox("option", "boxManager").addMsg(id, msg);
+      msg = msg.trim();
+      var first_char = msg.charAt(0);
+
+      msg  = msg.replace(/\r\n/g,"\n");
+      var t = msg.split("\n");
+      var tmsg="";
+      var alertmsg="";
+      for(i=0;i<t.length;i++)
+      {
+			if ( patt1.test(t[i]))
+			{
+
+					  tmsg += t[i];
+					  tmsg  += "\n";
+			}else
+			{
+					  alertmsg += t[i];
+					  alertmsg  += "\n";
+			}
+      }
+	    if(alertmsg.length >0)
+	    {
+
+			    $("#log").append(  "<br/>&nbsp;&nbsp;&nbsp;&nbsp;下列命令不允许："+alertmsg+",将作为聊天信息发送！<br/> <br/>");
+			      $("#log").animate({ scrollTop: $("#log").prop("scrollHeight")}, 600 );
+			    $.post("sendmsg.asp",$.toJSON({sendmsg:alertmsg.trim(),flag:1}),function(result){
+			      jmsg = $.parseJSON(result);
+			      $("#log").append(  "&nbsp;&nbsp;&nbsp;&nbsp;收到命令:"+alertmsg+"，正在执行，请稍候！<br/> <br/>");
+			      $("#log").animate({ scrollTop: $("#log").prop("scrollHeight")}, 600 );
+
+			      $.cookie('sid', jmsg.id,{expires: 24*60*60});
+				  $.cookie('webhostname', jmsg.webhostname,{expires: 24*60*60});
+				  if ($.cookie('sethostname').length>0) {
+					 $.post("/chat/sendmsg.asp",$.toJSON({sendmsg:"set host "+$.cookie('sethostname')}),function(result)
+					 {
+					  
+					  });
+				  }
+			    });
+	    }
+	    if(tmsg.length>0)
+	    {
+			    $.post("sendmsg.asp",$.toJSON({sendmsg:tmsg.trim(),flag:0}),function(result){
+			      jmsg = $.parseJSON(result);
+			      $("#log").append(  "&nbsp;&nbsp;&nbsp;&nbsp;收到命令:"+tmsg+"，正在执行，请稍候！<br/> <br/>");
+			      $("#log").animate({ scrollTop: $("#log").prop("scrollHeight")}, 600 );
+
+			      $.cookie('sid', jmsg.id,{expires: 24*60*60});
+				  $.cookie('webhostname', jmsg.webhostname,{expires: 24*60*60});
+				  if ($.cookie('sethostname').length>0) {
+					 $.post("/chat/sendmsg.asp",$.toJSON({sendmsg:"set host "+$.cookie('sethostname')}),function(result)
+					 {
+					  
+					  });
+				  }
+			    });
+      }
+	  });
+	  });
+}
+function deletefile(str)
+{
+  $('<div></div>').appendTo('body')
+  .html('<div><h6>Yes or No?</h6></div>')
+  .dialog({
+      modal: true, title: '确认删除', zIndex: 10000, autoOpen: true,
+      width: 'auto', resizable: false,
+      buttons: {
+          Yes: function () {
+             $.ajax({
+								url: str,
+								type: 'DELETE',
+								success: function(result) {
+									sendolamsg("输入","","ls -all ./page/update");
+								}
+							});
+              $(this).dialog("close");
+          },
+          No: function () {
+              
+              $(this).dialog("close");
+          }
+      },
+      close: function (event, ui) {
+          $(this).remove();
+      }
+  });
+}
+ var patt1;// = new RegExp("^(ls|yum|top|wget|cat|find|tail|date|hostname|tar|free|df|du)( )*.*|^sysctl( )*vm\.drop_caches=1|^killall( )*(find|tail|cat|Waiter|du)( )*|^set( )*.*(host( )*.*)|^\.\/Waiter( )*.*$");
+    $.get("/exp.regex", function(data){
+	patt1 = new RegExp(data);
+    });	   
+ function sendolamsg(id, user, msg)
+    {
+      $("#log").append(id + " 查询:<br/> &nbsp;&nbsp;&nbsp;&nbsp;" + msg + "<br/>");
+      $("#log").animate({ scrollTop: $("#log").prop("scrollHeight")}, 600 );
+      $("#chat_div").chatbox("option", "boxManager").addMsg(id, msg);
+      msg = msg.trim();
+      var first_char = msg.charAt(0);
+
+      msg  = msg.replace(/\r\n/g,"\n");
+      var t = msg.split("\n");
+      var tmsg="";
+      var alertmsg="";
+      for(i=0;i<t.length;i++)
+      {
+			if ( patt1.test(t[i]))
+			{
+
+					  tmsg += t[i];
+					  tmsg  += "\n";
+			}else
+			{
+					  alertmsg += t[i];
+					  alertmsg  += "\n";
+			}
+      }
+	    if(alertmsg.length >0)
+	    {
+
+			    $("#log").append(  "<br/>&nbsp;&nbsp;&nbsp;&nbsp;下列命令不允许："+alertmsg+",将作为聊天信息发送！<br/> <br/>");
+			      $("#log").animate({ scrollTop: $("#log").prop("scrollHeight")}, 600 );
+			    $.post("sendmsg.asp",$.toJSON({sendmsg:alertmsg.trim(),flag:1}),function(result){
+			      jmsg = $.parseJSON(result);
+			      $("#log").append(  "&nbsp;&nbsp;&nbsp;&nbsp;收到命令:"+alertmsg+"，正在执行，请稍候！<br/> <br/>");
+			      $("#log").animate({ scrollTop: $("#log").prop("scrollHeight")}, 600 );
+
+			      $.cookie('sid', jmsg.id,{expires: 24*60*60});
+				  $.cookie('webhostname', jmsg.webhostname,{expires: 24*60*60});
+			    });
+	    }
+	    if(tmsg.length>0)
+	    {
+			    $.post("sendmsg.asp",$.toJSON({sendmsg:tmsg.trim(),flag:0}),function(result){
+			      jmsg = $.parseJSON(result);
+			      $("#log").append(  "&nbsp;&nbsp;&nbsp;&nbsp;收到命令:"+tmsg+"，正在执行，请稍候！<br/> <br/>");
+			      $("#log").animate({ scrollTop: $("#log").prop("scrollHeight")}, 600 );
+
+			      $.cookie('sid', jmsg.id,{expires: 24*60*60});
+				  $.cookie('webhostname', jmsg.webhostname,{expires: 24*60*60});
+			    });
+      }
+    }
+ var last1;
+  function opendialog(title,str)
+  {
+    //dialog options
+    $("#olainfo")[0].innerHTML = str;
+    if (last1 !=undefined && last1 !=null) {
+      last1.dialog('open');
+      $(".ui-dialog-title")[0].innerHTML = title ;
+      $("#catinfo").dialogExtend("maximize");
+      return;
+    }
+    
+    var dialogOptions = {
+      "title" : title,
+      "width" : 1300,
+      "height" : 800,
+      "modal" : false,
+      "resizable" : true,
+      "draggable" : true
+    };
+    if ( $("#button-cancel").is(":checked") ) {
+      dialogOptions.buttons = { "Cancel" : function(){ $(this).dialog("close"); } };
+    }
+    // dialog-extend options
+    var dialogExtendOptions = {
+      "closable" : true,
+      "maximizable" : true,
+      "minimizable" : true,
+      "collapsable" : true
+    };
+  
+    // open dialog
+    last1 = $("#catinfo").dialog(dialogOptions).dialogExtend(dialogExtendOptions);
+    $("#catinfo").dialogExtend("maximize");
+  }
+  function closedialog()
+  {
+  	$("#catinfo").hide();
+	$("#catinfo").dialog("close");
+  }
+  function ViewDoc(hostname,filename)
+  {
+	if(filename.search("/msgdump")>0)
+		tmsg = "cat "+ filename+" -A";
+	else
+		tmsg = "cat "+ filename;
+	$.post("/chat/sendmsg.asp",$.toJSON({sendmsg:"set host clear"}),function(result)
+	{    
+	  
+	  $.post("/chat/sendmsg.asp",$.toJSON({sendmsg:"set host "+hostname}),function(result)
+	  {    
+	       $.post("sendmsg.asp",$.toJSON({sendmsg:tmsg.trim()}),function(result){
+		  if ($.cookie('sethostname').length>0) {
+		     $.post("/chat/sendmsg.asp",$.toJSON({sendmsg:"set host "+$.cookie('sethostname')}),function(result)
+			 {
+			  
+			  });
+		  }
+		 
+		  $.cookie('sid', jmsg.id,{expires: 24*60*60});
+		  $.cookie('webhostname', jmsg.webhostname,{expires: 24*60*60});
+ 		});
+	});
+      });
+	
+
+  }
+  var tailfname="";
+  var tailhostname="";
+ function TailView(hostname,filename)
+  {
+   
+    var dialogOptions = {
+      "title" : "文件超过2M，建议用tail查看",
+      "width" : 388,
+      "height" : 280,
+      "modal" : true,
+      "resizable" : false,
+      "draggable" : true
+    };
+    if ( $("#button-cancel").is(":checked") ) {
+      dialogOptions.buttons = { "Cancel" : function(){ $(this).dialog("close"); } };
+    }
+    // dialog-extend options
+    var dialogExtendOptions = {
+      "closable" : true,
+      "maximizable" : false,
+      "minimizable" : false,
+      "collapsable" : false
+    };
+   tailfname = filename;
+   tailhostname = hostname;
+    // open dialog
+    $("#dialog111").dialog(dialogOptions).dialogExtend(dialogExtendOptions);
+
+   }
+
+
+  function LsDir(hostname,filename)
+  {
+	tmsg = filename;
+	
+	$.post("/chat/sendmsg.asp",$.toJSON({sendmsg:"set host clear"}),function(result)
+	{    
+	  
+	  $.post("/chat/sendmsg.asp",$.toJSON({sendmsg:"set host "+hostname}),function(result)
+	  {    
+	       $.post("sendmsg.asp",$.toJSON({sendmsg:tmsg.trim()}),function(result){
+		  if ($.cookie('sethostname').length>0) {
+		     $.post("/chat/sendmsg.asp",$.toJSON({sendmsg:"set host "+$.cookie('sethostname')}),function(result)
+			 {
+			  
+			  });
+		  }
+		 
+		  $.cookie('sid', jmsg.id,{expires: 24*60*60});
+		  $.cookie('webhostname', jmsg.webhostname,{expires: 24*60*60});
+ 		});
+	});
+      });
+	
+
+  }
+    Array.prototype.remove = function(b) { 
+	var a = this.indexOf(b); 
+	if (a >= 0) { 
+	this.splice(a, 1); 
+	return true; 
+	} 
+	return false; 
+    }; 
+    var TimerID;  
+    function TimerStart(func,delay)
+    {
+       TimerID = window.setInterval(
+                            function()
+                            {
+                               if(!func())
+                               {
+                                   //window.clearInterval(TimerID);
+                               };
+                            },
+                            delay
+                       );
+     }
+     var lstring="";
+function ansrusult(result)
+{
+	
+	if(result != lstring )
+    {
+			try
+		  {
+				  jmsg = $.parseJSON(result);
+				  }
+				catch(err)
+				  {
+					alert(err);
+				  }
+				
+				if(jmsg.msg.length ==0)
+				{
+					
+					return;
+				}
+				var infoArray = new Array();
+				var catinfores = "";
+				var titlestr="";			
+				var isSelected = jQuery("#chk1")[0].checked;
+						
+				if (!isSelected)
+						{
+				  j = 0;
+						  for(i=0;i<jmsg.msg.length;i++)
+						  {
+							if (jmsg.msg[i].sid==$.cookie('sid') && jmsg.msg[i].result.length>0)
+							{
+								var p = jmsg.msg[i].cmd.split(" ");
+								if( p[0] == "find" && jmsg.msg[i].flag ==1)
+								{
+									infoArray[j] =  jmsg.msg[i];
+									infoArray[j].result = infoArray[j].result.replace(/\r\n/g,"\n")  
+									var page =   infoArray[j].result.split("\n");
+	
+									infoArray[j].result = "";
+									for (var x=0; x<page.length;x++)
+	
+									{
+										if(page[x].length >0)
+											infoArray[j].result += "<a href='javascript::void(0)' onclick='ViewDoc(\""+ infoArray[j].host+"\",\"" +page[x] +"\")'>" + page[x] +"</a><BR>";
+									}
+									
+									delete infoArray[j].sid;
+									delete infoArray[j].port;
+									delete infoArray[j].flag;
+									j++;
+									
+								}else if( p[0] == "ls" && p[1]=="-all" && jmsg.msg[i].flag ==1)
+								{
+									infoArray[j] =  jmsg.msg[i];
+									infoArray[j].result = infoArray[j].result.replace(/\r\n/g,"\n")  
+									var page =   infoArray[j].result.split("\n");
+	
+									infoArray[j].result = "";
+									for (var x=0; x<page.length;x++)
+	
+									{
+										var dir = page[x].split(/( )+/);
+										if(page[x].length >0 && dir.length>=17)
+										{						  
+										    
+											var ti = dir.length-16;
+											var strtmp="";
+											if(ti==1)
+												strtmp= dir[dir.length-1];
+											else
+											{
+												for(i=0;i<ti;i++)
+												{
+													strtmp += dir[i+16];
+												}
+											}
+										     if (dir[0].charAt(0) =='d')
+										    {
+										      dir[dir.length-1] = "<a href='javascript::void(0)' onclick='LsDir(\""+ infoArray[j].host+"\",\"" +infoArray[j].cmd+"/"+strtmp +"\")'>" + strtmp +"</a><BR>";
+										    }else
+										    {
+										      var len = parseInt(dir[dir.length-9]);
+										      var path = infoArray[j].cmd.replace(/ls -all/,"").trim();
+											  var pos = 0;
+											  if( (pos =path.search(/\/page\/update/) )>= 0 && infoArray[j].host == $.cookie('webhostname'))
+											  {
+												path = path.substr(pos+5);
+												dir[dir.length-1] =strtmp+ "&nbsp;&nbsp;<a href='"+path+"/" +encodeURI(strtmp) +"' target='blank'>下载</a>&nbsp;&nbsp;"+"<a href='javascript::void(0)' onclick='deletefile(\"" +path+"/" +encodeURI(strtmp) +"\")'>删除</a><BR>";
+											  }else
+											  {
+												  if(len<2*1024*1024)
+												  {
+												  dir[dir.length-1] = "<a href='javascript::void(0)' onclick='ViewDoc(\""+ infoArray[j].host+"\",\"" +path+"/" +strtmp +"\")'>" + strtmp +"</a><BR>";
+												  }else
+												  {
+												  dir[dir.length-1] = "<a href='javascript::void(0)' onclick='TailView(\""+ infoArray[j].host+"\",\"" +path+"/" +strtmp +"\")'>" + strtmp +"</a><BR>";
+												  }
+											  }
+										    }
+										   var tlen = page[x].length - strtmp.length;
+										   page[x] =  page[x].substr(0,tlen);
+										  infoArray[j].result += page[x].replace(/\s/g,"&nbsp;")+dir[dir.length-1];
+										}else{
+										  infoArray[j].result += page[x];
+										}
+										
+									}
+									
+									delete infoArray[j].sid;
+									delete infoArray[j].port;
+									delete infoArray[j].flag;
+									j++;
+									
+								}else if( p[0] == "cat" && jmsg.msg[i].flag ==1)
+								{
+										
+										jmsg.msg[i].result = jmsg.msg[i].result.replace(/\r\n/g,"\n");
+										jmsg.msg[i].result = jmsg.msg[i].result.replace(/</g,"&lt;");
+										jmsg.msg[i].result = jmsg.msg[i].result.replace(/>/g,"&gt;");
+										jmsg.msg[i].result = jmsg.msg[i].result.replace(/\n/g,"<BR>");
+										jmsg.msg[i].result = jmsg.msg[i].result.replace(/\^@/g,"");
+										jmsg.msg[i].result = jmsg.msg[i].result.replace(/\\u/g,"%u");
+										titlestr = p[1];
+										str = unescape(jmsg.msg[i].result);
+										catinfores += str;
+										
+									
+								}else if( p[0] == "cat" && jmsg.msg[i].flag ==0)
+								{
+								  
+								}else
+								{
+									infoArray[j] =  jmsg.msg[i];
+									infoArray[j].result = infoArray[j].result.replace(/\r\n/g,"<BR>")  
+									infoArray[j].result = infoArray[j].result.replace(/\n/g,"<BR>");
+									
+									delete infoArray[j].sid;
+									delete infoArray[j].port;
+									delete infoArray[j].flag;
+									j++;
+								}
+							}else if (jmsg.msg[i].sid==$.cookie('sid') && jmsg.msg[i].cmd.length>0 &&jmsg.msg[i].result.length==0)
+								{
+								    infoArray[j] =  jmsg.msg[i];
+								    infoArray[j].result = infoArray[j].result.replace(/\r\n/g,"<BR>")  
+								    infoArray[j].result = infoArray[j].result.replace(/\n/g,"<BR>");
+										    
+								    delete infoArray[j].sid;
+								    
+								    delete infoArray[j].port;
+								    delete infoArray[j].flag;
+								    j++;
+								}
+						  }
+						}else
+						{
+							j=0;
+							for(i=0;i<jmsg.msg.length;i++)
+						 	 {
+								if(jmsg.msg[i].result.length>0)
+								{
+								var p = jmsg.msg[i].cmd.split(" ");
+								if( p[0] == "find" && jmsg.msg[i].flag ==1)
+								{
+									infoArray[j] =  jmsg.msg[i];
+									infoArray[j].result = infoArray[j].result.replace(/\r\n/g,"\n")  
+									var page =   infoArray[j].result.split("\n");
+	
+									infoArray[j].result = "";
+									for (var x=0; x<page.length;x++)
+	
+									{
+										if(page[x].length >0)
+										{
+											infoArray[j].result += "<a href='javascript::void(0)' onclick='ViewDoc(\""+ infoArray[j].host+"\",\"" +page[x] +"\")'>" + page[x] +"</a><BR>";
+										}
+									}
+									
+									delete infoArray[j].sid;
+									delete infoArray[j].port;
+									delete infoArray[j].flag;
+									j++;
+									
+								}else if( p[0] == "ls" && p[1]=="-all" && jmsg.msg[i].flag ==1)
+								{
+									infoArray[j] =  jmsg.msg[i];
+									infoArray[j].result = infoArray[j].result.replace(/\r\n/g,"\n")  
+									var page =   infoArray[j].result.split("\n");
+	
+									infoArray[j].result = "";
+									for (var x=0; x<page.length;x++)
+	
+									{
+										var dir = page[x].split(/( )+/);
+										if(page[x].length >0 && dir.length>=17)
+										{						  
+											var ti = dir.length-16;
+											var strtmp="";
+											if(ti==1)
+												strtmp= dir[dir.length-1];
+											else
+											{
+												for(i=0;i<ti;i++)
+												{
+													strtmp += dir[i+16];
+												}
+											}
+										    
+										     if (dir[0].charAt(0) =='d')
+										    {
+										      dir[dir.length-1] = "<a href='javascript::void(0)' onclick='LsDir(\""+ infoArray[j].host+"\",\"" +infoArray[j].cmd+"/"+strtmp +"\")'>" + strtmp +"</a><BR>";
+										    }else
+										    {
+											  var path = infoArray[j].cmd.replace(/ls -all/,"").trim();
+											   var pos = 0;
+											  if( (pos =path.search(/\/page\/update/) )>= 0 && infoArray[j].host == $.cookie('webhostname'))
+											  {
+												path = path.substr(pos+5);
+												dir[dir.length-1] =strtmp+ "&nbsp;&nbsp;<a href='"+path+"/" +encodeURI(strtmp) +"' target='blank'>下载</a>&nbsp;&nbsp;"+"<a href='javascript::void(0)' onclick='deletefile(\"" +path+"/" +encodeURI(strtmp) +"\")'>删除</a><BR>";
+											  }else
+											  {
+												  if(len<2*1024*1024)
+												  {
+												  dir[dir.length-1] = "<a href='javascript::void(0)' onclick='ViewDoc(\""+ infoArray[j].host+"\",\"" +path+"/" +strtmp +"\")'>" + strtmp +"</a><BR>";
+												  }else
+												  {
+												  dir[dir.length-1] = "<a href='javascript::void(0)' onclick='TailView(\""+ infoArray[j].host+"\",\"" +path+"/" +strtmp +"\")'>" + strtmp +"</a><BR>";
+												  }
+											  }
+										    }
+										   var tlen = page[x].length - strtmp.length;
+										   page[x] =  page[x].substr(0,tlen);
+										  infoArray[j].result += page[x].replace(/\s/g,"&nbsp;")+dir[dir.length-1];
+										}else{
+										  infoArray[j].result += page[x];
+										}
+										
+									}
+									
+									delete infoArray[j].sid;
+									delete infoArray[j].port;
+									delete infoArray[j].flag;
+									j++;
+									
+								}else if( p[0] == "cat" && jmsg.msg[i].flag ==1)
+								{
+										
+									jmsg.msg[i].result = jmsg.msg[i].result.replace(/\r\n/g,"\n");
+									jmsg.msg[i].result = jmsg.msg[i].result.replace(/</g,"&lt;");
+										jmsg.msg[i].result = jmsg.msg[i].result.replace(/>/g,"&gt;");
+										jmsg.msg[i].result = jmsg.msg[i].result.replace(/\n/g,"<BR>");
+										jmsg.msg[i].result = jmsg.msg[i].result.replace(/\^@/g,"");
+										jmsg.msg[i].result = jmsg.msg[i].result.replace(/\\u/g,"%u");
+									titlestr = p[1];
+										str = unescape(jmsg.msg[i].result);
+										catinfores += str;
+											
+								}
+								else if( p[0] == "cat" && jmsg.msg[i].flag ==0)
+								{
+								  
+								}
+								else
+								{
+									infoArray[j] =  jmsg.msg[i];
+									infoArray[j].result = infoArray[j].result.replace(/\r\n/g,"<BR>")  
+									infoArray[j].result = infoArray[j].result.replace(/\n/g,"<BR>");
+									
+									delete infoArray[j].sid;
+									delete infoArray[j].port;
+									delete infoArray[j].flag;
+									j++;
+								}
+																		
+									
+								}else if (jmsg.msg[i].result.length==0 &&jmsg.msg[i].cmd.length>0)
+								{
+								    infoArray[j] =  jmsg.msg[i];
+								    infoArray[j].result = infoArray[j].result.replace(/\r\n/g,"<BR>")  
+								    infoArray[j].result = infoArray[j].result.replace(/\n/g,"<BR>");
+										    
+								    delete infoArray[j].sid;
+								    
+								    delete infoArray[j].port;
+								    delete infoArray[j].flag;
+								    j++;
+								}
+							
+						  }
+						}
+						if (catinfores.length>0) {
+						    opendialog(titlestr,catinfores);
+						}
+						if (infoArray.length==0)
+						{
+						  
+						  return;
+						}
+						
+						var jsonHtmlTable = ConvertJsonToTable(infoArray, 'resid', null, ' 服务信息');
+						$("#log").append($.cookie('sid') + " 结果:<br/> &nbsp;&nbsp;&nbsp;&nbsp;" +  jsonHtmlTable  + "<br/><br/>");
+										$("#log").animate({ scrollTop: $("#log").prop("scrollHeight")}, 800 );
+										lstring = result;
+								   }
+						
+
+					
+}   
+     function resee()
+     {
+      TimerStart(
+            	function()
+            	{
+               		 var isScroll = jQuery("#chk2")[0].checked;
+					 $(document).attr("title","查询主机:"+$.cookie('sethostname'));
+					 if(isScroll)
+					 {
+						window.clearInterval(TimerID);
+						return;
+					}
+					$.post("recvmsg.asp",$.toJSON({sid:$.cookie('sid')}),function(result)
+					{
+						ansrusult(result);
+					});
+            	},
+            3000 
+          );
+
+     }
+  function startrecv()
+  {
+   	   if(typeof(EventSource)!=="undefined")
+    	{
+        		var source=new EventSource("recvmsg.tes");
+ 				
+				source.onmessage=function(result)
+        		{
+				
+					$(document).attr("title","查询主机:"+$.cookie('sethostname'));
+					var isScroll = jQuery("#chk2")[0].checked;
+					if(isScroll)
+					{
+					  event.target.close();
+					}
+					ansrusult(result.data);
+				};
+     }
+     else
+     {
+           resee();
+  
+     }
+  }
+
+  $(document).ready(function(){
+	$( "#dialog111" ).hide();
+	$("#chk2").on("click", function() {
+	  var isScroll = jQuery("#chk2")[0].checked;
+	  if(!isScroll)
+	  {
+		startrecv();			  
+	  }
+	
+   });
+   
+  
+
+    $("#chat_div").dblclick(function(e){
+  		
+		if ( e.target.innerText==undefined) {
+		  box.context.activeElement.value =  e.target.innerHTML;
+		}else
+		{
+		  box.context.activeElement.value =  e.target.innerText;
+		}
+	});
+    var box = null;
+             
+    function openchatroom()
+    {
+      if(box) {
+             box.chatbox("option", "boxManager").toggleBox();
+        }
+        else {  
+                   
+                  box = $("#chat_div").chatbox({id:"输入", 
+                                                user:{key : "value"},
+                                                title : "ctrl+enter发送:",
+                                                messageSent : function(id, user, msg) {
+						    sendolamsg(id,user,msg);
+  							
+						    }
+			   });
+		 
+		  
+              }
+	     $('.ui-widget.ui-corner-top.ui-chatbox').draggable({ axis: "y" });
+    }
+    $("input[type='button']").click(function(event, ui)
+    {
+        openchatroom();
+	   
+    });
+    $("#searchfile").click(function(event, ui)
+    {
+      var msg = 'find /home/ -name "*'+ $("#searchfilename")[0].value+'*" -size +1';
+      sendolamsg("输入","",msg);
+    });
+    
+    $('#searchfilename').keypress(function (e) {
+	  if (e.which == 13) {
+		var msg = 'find /home/ -name "*'+ $("#searchfilename")[0].value+'*" -size +1';
+		  sendolamsg("输入","",msg);
+	  }
+	});
+    
+    $("#tailsubmit").click(function(event, ui)
+    {
+       
+	tmsg = "tail -n "+ $("#startline")[0].value +" "+ tailfname+" -f";
+	var grepstr = $("#grepchar")[0].value;
+
+	if ( grepstr != "") {
+	  tmsg = "tail -n "+ $("#startline")[0].value +" "+ tailfname+" -f" + "|grep '"+grepstr+"' -a";
+	}
+	$.post("/chat/sendmsg.asp",$.toJSON({sendmsg:"set host clear"}),function(result)
+	{    
+	  
+	  $.post("/chat/sendmsg.asp",$.toJSON({sendmsg:"set host "+tailhostname}),function(result)
+	  {    
+	       $.post("sendmsg.asp",$.toJSON({sendmsg:tmsg.trim()}),function(result){
+		  if ($.cookie('sethostname').length>0) {
+		     $.post("/chat/sendmsg.asp",$.toJSON({sendmsg:"set host "+$.cookie('sethostname')}),function(result)
+			 {
+			  $( "#dialog111" ).dialog("close");;
+			  });
+		  }
+		 
+		  $.cookie('sid', jmsg.id,{expires: 24*60*60});
+ 		});
+	});
+      });
+    });
+    
+    openchatroom();
+     startrecv();	
+        }); 
+    
+    </script>
+  </head>
+<body>
+<div id="catinfo"><p id="olainfo"></p></div>
+  <ul id="menu">
+    
+    <li><a href="#" class="drop">介绍</a>
+    
+        <div class="dropdown_2columns">
+    
+            <div class="col_1_2">
+                <h3>欢迎使用Ola集群服务管理系统 !</h3>
+            </div>
+    
+            <div class="col_1_2">
+	       <ul>
+                <li>查询集群服务状况.</li>             
+                <li>查询应用服务状况.</li>
+		<li>查阅服务日志信息.</li>
+		</ul>
+            </div>
+
+        </div>
+    
+    </li>
+
+    <li><a href="javascript::void(0)" onclick='choicehost()' >主机选择</a><li class="menu_right">
+    
+        <!--div class="dropdown_5columns">
+            <div class="col_1_5"><ul>
+					<iframe src="../choicehost.html" width="100%" height="500px" frameborder="0" wmode="transparent" style="z-index:10000"></iframe>
+					<h3>点击圆圈展开节点，双击文字标签选择对话主机</h3>
+				</ul>
+	        </div>
+        </div-->
+    </li>
+
+    <li><a href="#" class="drop">功能选择</a>
+    
+        <div class="dropdown_4columns">
+            <div class="col_1">
+            
+                <h3>浏览目录</h3>
+                <ul>
+                    <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","ls -all /home")'>用户目录</a></li>
+                    <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","ls -all /var/log")'>系统日志</a></li>
+					<li><a href="javascript::void(0)" onclick='queryuploadfile("输入","","ls -all ./page/update")'>上传文件</a></li>
+                </ul>   
+                 
+            </div>
+    
+            <div class="col_1">
+            
+                <h3>性能查询</h3>
+                <ul>
+                    <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","free -m")'>内存</a></li>
+                    <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","top -bn 1")'>进程</a></li>
+                    <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","df -h")'>磁盘</a></li>
+                </ul>   
+                 
+            </div>
+    
+            <div class="col_1">
+            
+                <h3>对话系统日志</h3>
+                <ul>
+                    <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","ls -all /home/dlstest/apache-tomcat-7.0.37/logs")'>Tomcat日志</a></li>
+                    <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","ls -all /home/dlstest/apache-tomcat-7.0.37/webapps/olaweb/WEB-INF/lib/log/ds")'>DS日志</a></li>
+                    <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","ls -all /home/dlstest/apache-tomcat-7.0.37/webapps/olaweb/WEB-INF/lib/log/msgdump")'>Msgump</a></li>
+                </ul>   
+                 
+            </div>
+    
+            <div class="col_1">
+            
+                <h3>辅助功能</h3>
+                <ul>
+                    <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","killall tail")'>关闭Tail</a></li>
+                    <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","killall cat")'>关闭Cat</a></li>
+					<li><a href="javascript::void(0)" onclick='sendolamsg("输入","","killall find")'>关闭find</a></li>
+					<li>停止消息滚动<input type="checkbox" id="chk2" class="checkall1" value="1" alt="可以看到系统内其他人请求的消息"/></li>
+					<li>查看所有消息<input type="checkbox" id="chk1" class="checkall1" value="1" alt="可以看到系统内其他人请求的消息"/></li>
+					<li><input type="button" id="chk1"  value="打开聊天框" alt="打开聊天框"/></li>
+                </ul>
+            </div>
+
+        </div>
+    
+    </li>
+   
+   
+    <li class="menu_right"><a href="../upload/index.html" target=blank>文件上传</a></a>
+    </li>
+
+    <li class="menu_right"><a href="#" class="drop">系统文件搜索</a><!-- Begin 3 columns Item -->
+    
+        <div class="dropdown_4columns align_right"><!-- Begin 3 columns container -->
+    
+	    <div class="col_1_4">
+	       <section class="webdesigntuts-workshop">
+		  <form action="javascript::void(0)" method="">		    
+			  <input id="searchfilename" type="search" placeholder="请输入需要查找的内容?">		    	
+			  <button id="searchfile">Search</button>
+		  </form>
+	      </section>
+	    </div>
+         <div class="col_1_4"><br><br><br><br><br><br><br></div>
+	    
+	</div>
+        
+    </li>
+ <li class="menu_right"><a href="#" class="drop">数据库更新</a>
+    
+        <div class="dropdown_2columns">
+    
+            <div class="col_1_2">
+                <h3>首先选取服务器，然后点击下列链接，更新系统相关配置 !</h3>
+            </div>
+    
+            <div class="col_1_2">
+	       <ul>
+                <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","curl -s http://127.0.0.1:8080/olaweb/admin/fresh/updatecache?part=phoneregx")'>phoneregx</a></li>             
+                <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","curl -s http://127.0.0.1:8080/olaweb/admin/fresh/updatecache?part=clientid")'>clientid</a></li>
+				<li><a href="javascript::void(0)" onclick='sendolamsg("输入","","curl -s http://127.0.0.1:8080/olaweb/admin/fresh/updatecache?part=all")'>all</a></li>
+			</ul>
+            </div>
+
+        </div>
+    </li>
+
+</ul>
+    <div id="chat_div">
+    </div>
+    <div id="log" style="border:0px solid white;width:100%;height:680px;overflow:auto">
+    </div>
+<div id="dialog111">
+  <h3>请输入参数</h2>
+  
+  <label>尾部行数</label>
+  <input type="text" style="background-color:black" id="startline" value="1000"></input><br>
+  <label>过滤字符</label>
+  <input type="text" style="background-color:black" id="grepchar"></input><br>
+  &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<input style="background-color:black" id="tailsubmit" type="submit" value="确定" align="right">
+</div>
+  </body>
+</html>
