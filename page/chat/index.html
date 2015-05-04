@@ -290,6 +290,31 @@ function deletefile(str)
 
    }
 
+ function Package(hostname,filename)
+  {
+	tmsg = "./package.sh "+filename;
+	alert(tmsg);
+	$.post("/chat/sendmsg.asp",$.toJSON({sendmsg:"set host clear"}),function(result)
+	{    
+	  
+	  $.post("/chat/sendmsg.asp",$.toJSON({sendmsg:"set host "+hostname}),function(result)
+	  {    
+	       $.post("sendmsg.asp",$.toJSON({sendmsg:tmsg.trim()}),function(result){
+		  if ($.cookie('sethostname').length>0) {
+		     $.post("/chat/sendmsg.asp",$.toJSON({sendmsg:"set host "+$.cookie('sethostname')}),function(result)
+			 {
+			  
+			  });
+		  }
+		 
+		  $.cookie('sid', jmsg.id,{expires: 24*60*60});
+		  $.cookie('webhostname', jmsg.webhostname,{expires: 24*60*60});
+ 		});
+	});
+      });
+	
+
+  }
 
   function LsDir(hostname,filename)
   {
@@ -417,7 +442,14 @@ function ansrusult(result)
 											}
 										     if (dir[0].charAt(0) =='d')
 										    {
-										      dir[dir.length-1] = "<a href='javascript::void(0)' onclick='LsDir(\""+ infoArray[j].host+"\",\"" +infoArray[j].cmd+"/"+strtmp +"\")'>" + strtmp +"</a><BR>";
+										      var path = infoArray[j].cmd.replace(/ls -all/,"").trim();
+										      if(pos =path.search("/logs/olalog/")>0 && strtmp!="." && strtmp!="..")
+											  //打包传递到/mnt/log
+											  {
+												dir[dir.length-1] = "<a href='javascript::void(0)' onclick='LsDir(\""+ infoArray[j].host+"\",\"" +infoArray[j].cmd+"/"+strtmp +"\")'>" + strtmp +"</a>&nbsp;&nbsp;<a title='文件放在\\\\fs01.olavoice.com\\share\\olalog &nbsp;&nbsp;目录' href='javascript::void(0)' onclick='Package(\""+ infoArray[j].host+"\",\"" +path+"/"+strtmp +"\")'> 打包 </a><BR>";
+											  }
+											  else
+											  dir[dir.length-1] = "<a href='javascript::void(0)' onclick='LsDir(\""+ infoArray[j].host+"\",\"" +infoArray[j].cmd+"/"+strtmp +"\")'>" + strtmp +"</a><BR>";
 										    }else
 										    {
 										      var len = parseInt(dir[dir.length-9]);
@@ -854,8 +886,7 @@ function ansrusult(result)
                 <h3>对话系统日志</h3>
                 <ul>
                     <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","ls -all /home/dlstest/apache-tomcat-7.0.37/logs")'>Tomcat日志</a></li>
-                    <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","ls -all /home/dlstest/apache-tomcat-7.0.37/webapps/olaweb/WEB-INF/lib/log/ds")'>DS日志</a></li>
-                    <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","ls -all /home/dlstest/apache-tomcat-7.0.37/webapps/olaweb/WEB-INF/lib/log/msgdump")'>Msgump</a></li>
+                    <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","ls -all /home/dlstest/apache-tomcat-7.0.37/logs/olalog/")'>DS日志</a></li>
                 </ul>   
                  
             </div>
@@ -910,7 +941,7 @@ function ansrusult(result)
 	       <ul>
                 <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","curl -s http://127.0.0.1:8080/olaweb/admin/fresh/updatecache?part=phoneregx")'>phoneregx</a></li>             
                 <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","curl -s http://127.0.0.1:8080/olaweb/admin/fresh/updatecache?part=clientid")'>clientid</a></li>
-				<li><a href="javascript::void(0)" onclick='sendolamsg("输入","","curl -s http://127.0.0.1:8080/olaweb/admin/fresh/updatecache?part=all")'>all</a></li>
+				<!--li><a href="javascript::void(0)" onclick='sendolamsg("输入","","curl -s http://127.0.0.1:8080/olaweb/admin/fresh/updatecache?part=all")'>all</a></li-->
 			</ul>
             </div>
 
