@@ -246,29 +246,47 @@ extern void stopwebsvr();
 void callpid_sh(const std::string& sid, const std::string& script,
 		CMcast_ptr m_ptr) {
 
+	 if (script.find("lock", 0) == 0)
+	 {
+		std::cout << "System normal state!" << std::endl;
+		m_sessionID.SetUnlock(false);
+		m_sessionID.SetKillFlag(sid, false);
+		return;
+	}
 	//开启定时器
 	timer_ptr m_t_p(new boost::asio::deadline_timer(io_service));
 
 	int infp = 0;
 	int fp = 0;
-	pid_t pid;
+	pid_t pid = NULL;
+	pid_t pid1 = NULL;
 	char result_buf[2048 * 1024 * 4];
 
 	//需要关注是否需要强制关闭
 	bool killflag = false;
+	int timeout = 50;
 	try {
-		pid = popen2(script.c_str(), &infp, &fp);
-		if (script.find("tail", 0) == 0) {
+
+		if (script.find("tail", 0) == 0 || script.find("tar", 0) == 0
+				|| script.find("./package.sh", 0) == 0
+				|| script.find("cat", 0) == 0 || script.find("find", 0) == 0) {
+			timeout = 300;
 			killflag = true;
+			pid = popen2(script.c_str(), &infp, &fp);
 		} else if (script.find("killall", 0) == 0) {
 			m_sessionID.SetKillFlag(sid, true);
-			killflag = false;
-		} else {
+		}
+		else if (script.find("unlock", 0) == 0) {
+			m_sessionID.SetUnlock(true);
+			std::cout << "System unlock state!" << std::endl;
+		}
+		else {
 			m_sessionID.SetKillFlag(sid, false);
+			pid = popen2(script.c_str(), &infp, &fp);
 		}
 		tpidmout_ptr m_tptr(new CPidTimeout(pid));
 
-		m_t_p->expires_from_now(boost::posix_time::seconds(30));
+		m_t_p->expires_from_now(boost::posix_time::seconds(timeout));
 		m_t_p->async_wait(
 				boost::bind(&zpidtimeout, boost::asio::placeholders::error,
 						m_tptr));
@@ -285,20 +303,35 @@ void callpid_sh(const std::string& sid, const std::string& script,
 		ssize_t r = 0;
 		//int tmoutnum =100;
 		while (true) {
+			if (m_sessionID.GetUnlock()) {
+				std::cout << "Recv unlock sig!" << script << std::endl;
+				m_t_p->cancel();
+				m_tptr->killpid();
+
+				std::cout << "Recv unlock sig!" << script << std::endl;
+				close(infp);
+				close(fp);
+				break;
+			}
+			if (killflag) {
+
+				if (m_sessionID.GetKillFlag(sid)) {
+					m_t_p->cancel();
+					pid1 = pid;
+					std::cout << "Recv kill sig!" << script << std::endl;
+					close(infp);
+					close(fp);
+					break;
+				}
+			}
 			r = ::read(d, result_buf, sizeof(result_buf));
 			if (r > 0) {
 				result_buf[r] = '\0';
 				m_ptr->send_to(sid, script, result_buf, 1);
-				if (killflag) {
 
-					if (m_sessionID.GetKillFlag(sid)) {
-						m_t_p->cancel();
-						std::cout << "Recv kill sig!" << script << std::endl;
-						break;
-					}
-				}
+
 				m_t_p->cancel();
-				m_t_p->expires_from_now(boost::posix_time::seconds(30));
+				m_t_p->expires_from_now(boost::posix_time::seconds(timeout));
 				m_t_p->async_wait(
 						boost::bind(&zpidtimeout,
 								boost::asio::placeholders::error, m_tptr));
@@ -315,18 +348,21 @@ void callpid_sh(const std::string& sid, const std::string& script,
 			}
 			if (errno == EAGAIN) {
 				/*tmoutnum --;
-				if(tmoutnum<=0)
-				{
-					close(infp);
-					close(fp);
-					break;
-				}*/
+				 if(tmoutnum<=0)
+				 {
+				 close(infp);
+				 close(fp);
+				 break;
+				 }*/
 				::usleep(10);
 				continue;
 			}
 
 		}
 		m_tptr->killpid();
+		if(pid1 == pid)
+			m_sessionID.SetKillFlag(sid, false);
+
 		//m_t_p->cancel();
 
 	} catch (...) {
@@ -407,15 +443,8 @@ void call_sh(const std::string& sid, const std::string& script,
 }
 #include "./web/SeessionID.h"
 extern SeessionID m_sessionID;
-
-void print_data(const std::string& str, const std::string& addr,
-		const int& port, CMcast_ptr m_ptr, int flag) {
-	if (str.empty())
-		return;
-	JsonMsg_ptr j_ptr(new JsonMsg());
-
-	j_ptr->ParseJson(str);
-
+void print_data(JsonMsg_ptr j_ptr, const std::string& addr, const int& port,
+		CMcast_ptr m_ptr, int flag) {
 	stringstream msg;
 
 	if (flag == 0) {
@@ -470,13 +499,92 @@ void print_data(const std::string& str, const std::string& addr,
 	} else {
 		return;
 	}
-	if(flag!=3)
+	if (flag != 3)
 		m_sessionID.WriteFunction(msg.str());
-	if (!j_ptr->GetHost().empty()) {
-		WriteLock w_lock(ssmapLock);
-		mapHost[j_ptr->GetHost()] = addr;
-	}
 }
+/*void print_data(const std::string& str, const std::string& addr,
+ const int& port, CMcast_ptr m_ptr, int flag) {
+ if (str.empty())
+ return;
+ JsonMsg_ptr j_ptr(new JsonMsg());
+
+ j_ptr->ParseJson(str);
+
+ stringstream msg;
+
+ if (flag == 0) {
+
+ std::cout << "Recv from: " << j_ptr->GetHost() << " IP " << addr
+ << " port:" << port << ", cmd:" << std::endl << j_ptr->GetCmd()
+ << std::endl;
+ if (j_ptr->invect(hname))
+ callpid_sh(j_ptr->sid, j_ptr->GetCmd(), m_ptr);
+ else
+ std::cout << "[" << hname << "]>(Ctrl+C)" << std::endl;
+
+ msg << "{" << "\"sid\":\"" << j_ptr->sid << "\",\"host\":\""
+ << j_ptr->GetHost() << "\",\"ip\":\"" << addr
+ << "\",\"port\":\"" << port << "\",\"flag\":0,\"cmd\":\""
+ << boost::property_tree::json_parser::create_escapes(
+ j_ptr->GetCmd()) << "\",\"result\":\""
+ << boost::property_tree::json_parser::create_escapes(
+ j_ptr->GetCmd()) << "\"}";
+
+ } else if (flag == 1) {
+
+ std::cout << "Recv from: " << j_ptr->GetHost() << " IP " << addr
+ << " port:" << port << ", result:" << std::endl
+ << j_ptr->GetResult() << std::endl;
+ std::cout << "[" << hname << "]>(Ctrl+C)" << std::endl;
+
+ msg << "{" << "\"sid\":\"" << j_ptr->sid << "\",\"host\":\""
+ << j_ptr->GetHost() << "\",\"ip\":\"" << addr
+ << "\",\"port\":\"" << port << "\",\"flag\":1,\"cmd\":\""
+ << boost::property_tree::json_parser::create_escapes(
+ j_ptr->GetCmd()) << "\",\"result\":\""
+ << boost::property_tree::json_parser::create_escapes(
+ j_ptr->GetResult()) << "\"}";
+ } else if (flag == 2) {
+ std::cout << "Recv from: " << j_ptr->GetHost() << " IP " << addr
+ << " port:" << port << ", msg:" << std::endl << "    "
+ << j_ptr->GetResult() << std::endl;
+
+ msg << "{" << "\"sid\":\"" << j_ptr->sid << "\",\"host\":\""
+ << j_ptr->GetHost() << "\",\"ip\":\"" << addr
+ << "\",\"port\":\"" << port << "\",\"flag\":2,\"cmd\":\""
+ << boost::property_tree::json_parser::create_escapes(
+ j_ptr->GetCmd()) << "\",\"result\":\""
+ << boost::property_tree::json_parser::create_escapes(
+ j_ptr->GetResult()) << "\"}";
+
+ std::cout << "[" << hname << ":" << gethoststr() << "]>"
+ << "Please input msg(Quit msg(quit)):" << std::endl;
+ } else if (flag == 3) {
+
+ } else {
+ return;
+ }
+ if (flag != 3)
+ m_sessionID.WriteFunction(msg.str());
+ if (!j_ptr->GetHost().empty()) {
+ bool host = false;
+ {
+ ReadLock w_lock(ssmapLock);
+ map<string, string>::iterator iter = mapHost.find(j_ptr->GetHost());
+ if (iter != mapHost.end() && iter->second != addr) {
+ host = true;
+ }
+ if (iter != mapHost.end()) {
+ host = true;
+ }
+ }
+ if (host) {
+ WriteLock w_lock(ssmapLock);
+ mapHost[j_ptr->GetHost()] = addr;
+ }
+
+ }
+ }*/
 
 CMcast::CMcast(boost::asio::io_service& io_service,
 		const boost::asio::ip::address& listen_address,
@@ -566,6 +674,7 @@ void CMcast::handle_receive_from(const boost::system::error_code& error,
 		string msg;
 
 		{
+
 			filtering_istream os;
 			m_zipptr->UnGzipToData((char*) inbound_data_.data() + 16,
 					inbound_data_size, os);
@@ -582,11 +691,48 @@ void CMcast::handle_receive_from(const boost::system::error_code& error,
 				}
 			}
 		}
+		string addr = get_remote_addr();
+		{
+			if (msg.empty()) {
+				socket_.async_receive_from(
+						boost::asio::buffer(inbound_data_.data(), max_length),
+						sender_endpoint_,
+						boost::bind(&CMcast::handle_receive_from,
+								shared_from_this(),
+								boost::asio::placeholders::error,
+								boost::asio::placeholders::bytes_transferred));
+			}
 
-		//加入处理线程
-		workthread_pool_ptr->schedule(
-				boost::bind(print_data, msg, get_remote_addr(),
-						get_remote_port(), shared_from_this(), flag));
+			JsonMsg_ptr j_ptr(new JsonMsg());
+
+			j_ptr->ParseJson(msg);
+			if (!j_ptr->GetHost().empty()) {
+				bool host = false;
+				if (mapHost.size() > 0) {
+					ReadLock w_lock(ssmapLock);
+					map<string, string>::iterator iter = mapHost.find(
+							j_ptr->GetHost());
+					if (iter != mapHost.end() && iter->second != addr) {
+						host = true;
+					}
+					if (iter == mapHost.end()) {
+						host = true;
+					}
+				} else {
+					host = true;
+				}
+				if (host) {
+					WriteLock w_lock(ssmapLock);
+					mapHost[j_ptr->GetHost()] = addr;
+				}
+
+			}
+			//加入处理线程
+			workthread_pool_ptr->schedule(
+					boost::bind(print_data, j_ptr, addr, get_remote_port(),
+							shared_from_this(), flag));
+
+		}
 
 		socket_.async_receive_from(
 				boost::asio::buffer(inbound_data_.data(), max_length),
@@ -623,6 +769,7 @@ void CMcast::send_to(const string & sid, const string & cmd, std::string msg,
 	std::ostringstream header_stream;
 
 	JsonMsg_ptr m_json(new JsonMsg());
+
 	m_json->cmddstVector = m_sessionID.GetVect(sid);
 	m_json->sid = sid;
 	m_json->AddCmd(cmd);
@@ -636,8 +783,7 @@ void CMcast::send_to(const string & sid, const string & cmd, std::string msg,
 	} else if (flag == 2) {
 		m_json->AddHost(hname);
 		m_json->AddResult(msg);
-	}else if(flag ==3)
-	{
+	} else if (flag == 3) {
 		m_json->AddHost(hname);
 	}
 	std::vector<boost::asio::const_buffer> buffers;
@@ -691,8 +837,7 @@ void CMcast::send_to(std::string msg, int flag) {
 	} else if (flag == 2) {
 		m_json->AddHost(hname);
 		m_json->AddResult(msg);
-	}else if(flag ==3)
-	{
+	} else if (flag == 3) {
 		m_json->AddHost(hname);
 	}
 	std::vector<boost::asio::const_buffer> buffers;

@@ -68,6 +68,9 @@ public:
 	void SetKillFlag(const std::string & sid,bool flag);
 	Ptr_strVector GetVect(const std::string & sid);
 	std::string GetIPAddr(const std::string & sid);
+
+	bool GetUnlock();
+	void SetUnlock(bool val);
 private:
 	//hostMap QueryHost;
 	//sidMap smap;

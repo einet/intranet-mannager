@@ -27,12 +27,6 @@ std::string webroot;
 extern std::string sendcmdexp;
 
 
-
-
-
-
-
-
 void sig_term(int signo) {
 	cout << "program terminated,wait for all threads over!" << endl;
 
@@ -127,7 +121,7 @@ int main(int argc, char* argv[]) {
 
 	//防止产生僵尸进程
 	//signal( SIGCHLD, SIG_IGN );
-#ifdef DEBUG
+#ifdef NDEBUG
 
 	int pid;
 

@@ -23,7 +23,18 @@ echo "killed $id"
 done
 echo "---------------"
 }
-
+copyfile()
+{
+   cd "${monitordir}"
+   if([ -f "Waiter1" ]);
+   then
+     echo "Copy"
+     cp -f  "Waiter1" "Waiter"
+   else
+     echo "Waiter1 No exist"
+   fi
+   chmod +x "Waiter"
+}
 start_waiter()
 {
 echo "startup Waiter"
@@ -32,4 +43,5 @@ cd "${monitordir}"
 ./Waiter 0.0.0.0 224.0.0.18 8099 32000 ./page
 }
 kill_process "Waiter"
+copyfile
 start_waiter

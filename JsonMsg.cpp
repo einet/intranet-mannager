@@ -64,7 +64,7 @@ std::string JsonMsg::MakeJsonString() {
 					array.add("name", cmddstVector[i]);
 				}
 			} else {
-
+				ReadLock r_lock(ssmapLock);
 				BOOST_FOREACH( const ssmap::value_type &iter, mapHost ) {
 
 					array.add("name", iter.first);
