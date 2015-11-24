@@ -314,7 +314,46 @@
                 $("#catinfo").dialogExtend("restore");
             return;
         }
+        function opendialog(title, str,style) {
+            //dialog options
+            $("#olainfo")[0].innerHTML = str;
+            if (last1 != undefined && last1 != null) {
+                last1.dialog('open');
+                $(".ui-dialog-title")[0].innerHTML = title;
+                if (style == 1)
+                    $("#catinfo").dialogExtend("maximize");
+                else
+                    $("#catinfo").dialogExtend("restore");
+                return;
+            }
 
+            var dialogOptions = {
+                "title": title,
+                "width": 980,
+                "height": 640,
+                "modal": false,
+                "resizable": true,
+                "draggable": true
+            };
+            if ($("#button-cancel").is(":checked")) {
+                dialogOptions.buttons = { "Cancel": function () { $(this).dialog("close"); } };
+            }
+            // dialog-extend options
+            var dialogExtendOptions = {
+                "closable": true,
+                "maximizable": true,
+                "minimizable": true,
+                "collapsable": true
+            };
+
+            // open dialog
+            last1 = $("#catinfo").dialog(dialogOptions).dialogExtend(dialogExtendOptions);
+            if (style == 1)
+                $("#catinfo").dialogExtend("maximize");
+            else
+                $("#catinfo").dialogExtend("restore");
+            return;
+        }
         function closedialog() {
             $("#catinfo").hide();
             $("#catinfo").dialog("close");
@@ -368,6 +407,30 @@
             tailhostname = hostname;
             // open dialog
             $("#dialog111").dialog(dialogOptions).dialogExtend(dialogExtendOptions);
+
+        }
+        function openquerykdialog() {
+
+            var dialogOptions = {
+                "title": "外网知识库查询",
+                "width": 388,
+                "height": 280,
+                "modal": true,
+                "resizable": false,
+                "draggable": true
+            };
+            if ($("#button-cancel").is(":checked")) {
+                dialogOptions.buttons = { "Cancel": function () { $(this).dialog("close"); } };
+            }
+            // dialog-extend options
+            var dialogExtendOptions = {
+                "closable": true,
+                "maximizable": false,
+                "minimizable": false,
+                "collapsable": false
+            };
+            // open dialog
+            $("#dialog_query_knowledge").dialog(dialogOptions).dialogExtend(dialogExtendOptions);
 
         }
 
@@ -671,7 +734,7 @@
                     }
                 }
                 var jsonHtmlTable = ConvertJsonToTable(infoArray, 'resid', 'hovertable', ' 服务信息');
-                var gcmd = "<div class=\"tailcmd\">运行命令(双击选择执行命令)：<div class=\"clickcmd\" align=\"center\">" + cmd + "</div></div>"
+                var gcmd = "<div class=\"tailcmd\">运行命令【"+infoArray.length+"】(双击选择执行命令)：<div class=\"clickcmd\" align=\"center\">" + cmd + "</div></div>"
                 $("#log").append($.cookie('sid') + " 结果:<br/> &nbsp;&nbsp;&nbsp;&nbsp;<pre>" + jsonHtmlTable + gcmd + "</pre><br/>");
                 $("#log").animate({ scrollTop: $("#log").prop("scrollHeight") }, 800);
                 $('.clickcmd').dblclick(function (e) {
@@ -725,6 +788,7 @@
         $(document).ready(function () {
             $("#dialog111").hide();
             $("#dialog112").hide();
+            $("#dialog_query_knowledge").hide();
             $("#chk2").on("click", function () {
                 var isScroll = jQuery("#chk2")[0].checked;
                 if (!isScroll) {
@@ -838,7 +902,46 @@
                     });
                 });
             });
+            //knowledgesubmit
+            // curl  -s  http://172.16.10.42/KnowledgeService2/queryv2?keyword1=%E6%AD%A6%E6%B1%89\&keyword2=.com
+            function k_submit()
+            {
+                var key1 = $("#keyword1")[0].value;
+                var key2 = $("#keyword2")[0].value;
+                tmsg = "curl -s http://172.16.10.42/KnowledgeService2/queryv2?keyword1=" + key1 + "\\&keyword2=" + key2;
 
+                $.post("/chat/sendmsg.asp", $.toJSON({ sendmsg: "set host clear" }), function (result) {
+
+                    $.post("/chat/sendmsg.asp", $.toJSON({ sendmsg: "set host knowledge" }), function (result) {
+                        $.post("sendmsg.asp", $.toJSON({ sendmsg: tmsg.trim() }), function (result) {
+                            if ($.cookie('sethostname').length > 0) {
+                                $.post("/chat/sendmsg.asp", $.toJSON({ sendmsg: "set host " + $.cookie('sethostname') }), function (result) {
+                                    $("#dialog_query_knowledge").dialog("close");;
+                                });
+                            }
+
+                            $.cookie('sid', jmsg.id, { expires: 24 * 60 * 60 });
+                        });
+                    });
+                });
+            }
+            $("#knowledgesubmit").click(function (event, ui)
+            {
+                k_submit();
+            });
+
+            $('#keyword1').keydown(function (e) {
+                var key = e.which;
+                if (key == 13) {
+                    k_submit();
+                }
+            });
+            $('#keyword2').keydown(function (e) {
+                var key = e.which;
+                if (key == 13) {
+                    k_submit();
+                }
+            });
             openchatroom();
             startrecv();
         });
@@ -870,7 +973,7 @@
         </li>
         <li>
             <a href="#" class="drop">功能选择</a>
-            <div class="dropdown_4columns">
+            <div class="dropdown_5columns">
                 <div class="col_1">
                     <h3>浏览目录</h3>
                     <ul>
@@ -895,6 +998,12 @@
                         <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","ls -all /home/dlstest/apache-tomcat-7.0.37/logs")'>Tomcat日志</a></li>
                         <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","ls -all /home/dlstest/apache-tomcat-7.0.37/logs/catalina.out")'>catalina.out</a></li>
                         <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","ls -all /home/dlstest/apache-tomcat-7.0.37/logs/olalog")'>DS日志</a></li>
+                    </ul>
+                </div>
+                <div class="col_1">
+                    <h3>其他查询</h3>
+                    <ul>
+                        <li><a href="javascript::void(0)" onclick='openquerykdialog()'>知识库查询</a></li>
                     </ul>
                 </div>
                 <div class="col_1">
@@ -970,6 +1079,17 @@
             <input type="text" style="background-color:black" id="grepline"></input><br>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
             <input style="background-color:black" id="tailsubmit" type="submit" value="确定" align="right">
+    </div>
+
+    <div id="dialog_query_knowledge">
+        <h3>
+            请输入参数</h2>
+            <label>关键字1</label>
+            <input type="text" style="background-color:black" id="keyword1"></input><br>
+            <label>关键字2</label>
+            <input type="text" style="background-color:black" id="keyword2"></input><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            <input style="background-color:black" id="knowledgesubmit" type="submit" value="查询" align="right">
     </div>
 </body>
 </html>
