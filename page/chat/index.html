@@ -97,15 +97,13 @@
         </style>
         <![endif]-->
     <script type="text/javascript">
-            var showdinfonum = 0;
+        var showdinfonum = 0;
         var showdinfonum_for = 0;
-        function showdetailinfo(i)
-        {
+        function showdetailinfo(i) {
             $('#userlistinfo' + i).toggle();
         }
-        function getuserchat(user, hostname)
-        {
-            var tmsg =  "curl -s http://127.0.0.1:8080/olaweb/admin/webadmin/userchat?username=" + user;
+        function getuserchat(user, hostname) {
+            var tmsg = "curl -s http://127.0.0.1:8080/olaweb/admin/webadmin/userchat?username=" + user;
 
             $.post("/chat/sendmsg.asp", $.toJSON({ sendmsg: "set host clear" }), function (result) {
 
@@ -124,10 +122,16 @@
             });
 
         }
+        function highlight()
+        {
+            $(".highlightclass").mouseover(function (event) {
+                $(this).css({ "background-color": "yellow", "font-size": "120%" });
 
-        function highlightbutton(s) {
-            if ("P" == event.srcElement.tagName || "A" == event.srcElement.tagName)
-                event.srcElement.className = s
+            });
+            $(".highlightclass").mouseout(function (event) {
+                $(this).css({ "background-color": "transparent", "font-size": "100%" });
+
+            });
         }
 
         String.prototype.trim = function () {
@@ -136,7 +140,7 @@
             return this.replace(/(^\s*)|(\s*$)/g, "");
         }
         function choicehost() {
-            opendialog('选择对话主机：点击圆圈展开节点，双击文字标签选择对话主机', '<iframe src="../choicehost.html" width="100%" height="100%" frameborder="0"></iframe>',1);
+            opendialog('选择对话主机：点击圆圈展开节点，双击文字标签选择对话主机', '<iframe src="../choicehost.html" width="100%" height="100%" frameborder="0"></iframe>', 1);
         }
         function queryuploadfile(id, user, msg) {
             $.post("/chat/sendmsg.asp", $.toJSON({ sendmsg: "set host clear" }), function (result) {
@@ -274,7 +278,7 @@
             }
         }
         var last1;
-        function opendialog(title, str,style) {
+        function opendialog(title, str, style) {
             //dialog options
             $("#olainfo")[0].innerHTML = str;
             if (last1 != undefined && last1 != null) {
@@ -314,7 +318,7 @@
                 $("#catinfo").dialogExtend("restore");
             return;
         }
-        function opendialog(title, str,style) {
+        function opendialog(title, str, style) {
             //dialog options
             $("#olainfo")[0].innerHTML = str;
             if (last1 != undefined && last1 != null) {
@@ -519,15 +523,13 @@
                 j = 0;
                 //合并同样主机，同样cmd的结果
                 var msg = new Map();
-                for (var i = 0; i < jmsg.msg.length; i++)
-                {
-                    var key = jmsg.msg[i].host + jmsg.msg[i].cmd+jmsg.msg[i].ip;
-                    if(msg.get(key) != undefined)
-                    {
+                for (var i = 0; i < jmsg.msg.length; i++) {
+                    var key = jmsg.msg[i].host + jmsg.msg[i].cmd + jmsg.msg[i].ip;
+                    if (msg.get(key) != undefined) {
                         var value = msg.get(key);
                         value.result += jmsg.msg[i].result;
                         msg.put(key, value);
-                    }else{
+                    } else {
                         msg.put(key, jmsg.msg[i]);
                     }
                 }
@@ -561,7 +563,7 @@
                             infoArray[j].result = "";
                             for (var x = 0; x < page.length; x++) {
                                 if (page[x].length > 0) {
-                                    infoArray[j].result += "<a onmouseover=\"highlightbutton('changecolor')\" onmouseout=\"highlightbutton('')\" href='javascript::void(0)' onclick='ViewDoc(\"" + infoArray[j].host + "\",\"" + page[x] + "\")'>" + page[x] + "</a>\n";
+                                    infoArray[j].result += "<a class=\"highlightclass\"  href='javascript:void(0)' onclick='ViewDoc(\"" + infoArray[j].host + "\",\"" + page[x] + "\")'>" + page[x] + "</a>\n";
                                 }
                             }
 
@@ -594,26 +596,26 @@
                                         if (pos = path.search("/logs/olalog") > 0 && strtmp != "." && strtmp != "..")
                                             //打包传递到/mnt/log
                                         {
-                                            dir[dir.length - 1] = "<a onmouseover=\"highlightbutton('changecolor')\" onmouseout=\"highlightbutton('')\" href='javascript::void(0)' onclick='LsDir(\"" + infoArray[j].host + "\",\"" + infoArray[j].cmd + "/" + strtmp + "\")'>" + strtmp + "</a>&nbsp;&nbsp;<a onmouseover=\"highlightbutton('changecolor')\" onmouseout=\"highlightbutton('')\" title='文件放在\\\\fs01.olavoice.com\\share\\olalog &nbsp;&nbsp;目录' href='javascript::void(0)' onclick='Package(\"" + infoArray[j].host + "\",\"" + path + "/" + strtmp + "\")'> 打包 </a>\n";
+                                            dir[dir.length - 1] = "<a class=\"highlightclass\"  href='javascript:void(0)' onclick='LsDir(\"" + infoArray[j].host + "\",\"" + infoArray[j].cmd + "/" + strtmp + "\")'>" + strtmp + "</a>&nbsp;&nbsp;<a class=\"highlightclass\"  title='文件放在\\\\fs01.olavoice.com\\share\\olalog &nbsp;&nbsp;目录' href='javascript::void(0)' onclick='Package(\"" + infoArray[j].host + "\",\"" + path + "/" + strtmp + "\")'> 打包 </a>\n";
                                         }
                                         else
-                                            dir[dir.length - 1] = "<a  onmouseover=\"highlightbutton('changecolor')\" onmouseout=\"highlightbutton('')\" href='javascript::void(0)' onclick='LsDir(\"" + infoArray[j].host + "\",\"" + infoArray[j].cmd + "/" + strtmp + "\")'>" + strtmp + "</a>\n";
+                                            dir[dir.length - 1] = "<a  class=\"highlightclass\"  href='javascript:void(0)' onclick='LsDir(\"" + infoArray[j].host + "\",\"" + infoArray[j].cmd + "/" + strtmp + "\")'>" + strtmp + "</a>\n";
                                     } else {
                                         var len = parseInt(dir[dir.length - 9]);
                                         var path = infoArray[j].cmd.replace(/ls -all/, "").trim();
                                         var pos = 0;
                                         if ((pos = path.search(/\/page\/update/)) >= 0 && infoArray[j].host == $.cookie('webhostname')) {
                                             path = path.substr(pos + 5);
-                                            dir[dir.length - 1] = strtmp + "&nbsp;&nbsp;<a href='" + path + "/" + encodeURI(strtmp) + "' target='blank'>下载</a>&nbsp;&nbsp;" + "<a onmouseover=\"highlightbutton('changecolor')\" onmouseout=\"highlightbutton('')\" href='javascript::void(0)' onclick='deletefile(\"" + path + "/" + encodeURI(strtmp) + "\")'>删除</a>\n";
+                                            dir[dir.length - 1] = strtmp + "&nbsp;&nbsp;<a href='" + path + "/" + encodeURI(strtmp) + "' target='blank'>下载</a>&nbsp;&nbsp;" + "<a class=\"highlightclass\"  href='javascript:void(0)' onclick='deletefile(\"" + path + "/" + encodeURI(strtmp) + "\")'>删除</a>\n";
                                         } else {
                                             if (path == strtmp) {
                                                 path = "";
                                             }
 
                                             if (len < 2 * 1024 * 1024) {
-                                                dir[dir.length - 1] = "<a onmouseover=\"highlightbutton('changecolor')\" onmouseout=\"highlightbutton('')\" href='javascript::void(0)' onclick='ViewDoc(\"" + infoArray[j].host + "\",\"" + path + "/" + strtmp + "\")'>" + strtmp + "</a>\n";
+                                                dir[dir.length - 1] = "<a class=\"highlightclass\"  href='javascript:void(0)' onclick='ViewDoc(\"" + infoArray[j].host + "\",\"" + path + "/" + strtmp + "\")'>" + strtmp + "</a>\n";
                                             } else {
-                                                dir[dir.length - 1] = "<a onmouseover=\"highlightbutton('changecolor')\" onmouseout=\"highlightbutton('')\" href='javascript::void(0)' onclick='TailView(\"" + infoArray[j].host + "\",\"" + path + "/" + strtmp + "\")'>" + strtmp + "</a>\n";
+                                                dir[dir.length - 1] = "<a class=\"highlightclass\"  href='javascript:void(0)' onclick='TailView(\"" + infoArray[j].host + "\",\"" + path + "/" + strtmp + "\")'>" + strtmp + "</a>\n";
                                             }
                                         }
                                     }
@@ -635,8 +637,7 @@
                             titlestr = p[1];
                             str = "<pre>" + unescape(jmsg.msg[i].result) + "</pre>";
                             catinfores += str;
-                        }else if(p[0]=="curl" && p[1]=="-s" && p[2]=="http://127.0.0.1:8080/olaweb/admin/webadmin/state")
-                        {//获取对话系统用户信息
+                        } else if (p[0] == "curl" && p[1] == "-s" && p[2] == "http://127.0.0.1:8080/olaweb/admin/webadmin/state") {//获取对话系统用户信息
                             infoArray[j] = jmsg.msg[i];
 
                             try {
@@ -644,20 +645,17 @@
                                 var userlist = userinfo.userlist;
                                 //添加查询用户聊天信息链接
                                 var usenum = 0;
-                                for (usenum = 0; usenum < userlist.length ; usenum++)
-                                {
+                                for (usenum = 0; usenum < userlist.length ; usenum++) {
                                     var name = userlist[usenum].name;
                                     delete userlist[usenum].name;
-                                    userlist[usenum].name = "<a href='javascript::void(0)' onclick='getuserchat(\"" + name + "\",\""+jmsg.msg[i].host+"\")'>" + name + "</a>";
+                                    userlist[usenum].name = "<a class=\"highlightclass\" href='javascript:void(0)' onclick='getuserchat(\"" + name + "\",\"" + jmsg.msg[i].host + "\")'>" + name + "</a>";
                                 }
                                 var usertotal = userinfo.total;
                                 var userTable = ConvertJsonToTable(userlist, 'userlistinfo' + showdinfonum, 'hovertable', '用户信息');
-                                if (parseInt(usertotal) > 0)
-                                {
-                                    userTotal = "<div class=\"tailcmd\">用户总数(<a href='javascript::void(0)' onclick='showdetailinfo(" + showdinfonum + ")'>详细</a>)：<div align=\"left\">" + usertotal + "</div></div>"
+                                if (parseInt(usertotal) > 0) {
+                                    userTotal = "<div class=\"tailcmd\">用户总数(<a class=\"highlightclass\" href='javascript:void(0)' onclick='showdetailinfo(" + showdinfonum + ")'>详细</a>)：<div align=\"left\">" + usertotal + "</div></div>"
 
-                                } else
-                                {
+                                } else {
                                     userTotal = "<div class=\"tailcmd\">用户总数：<div align=\"left\">" + usertotal + "</div></div>"
                                 }
                                 showdinfonum += 1;
@@ -665,20 +663,19 @@
                                 infoArray[j].result = userTable;
                                 infoArray[j].result += userTotal;
                             }
-                            catch (err)
-                            {
+                            catch (err) {
 
                             }
                             delete infoArray[j].sid;
                             delete infoArray[j].port;
                             delete infoArray[j].flag;
                             j++;
-                        } else if (p[0] == "curl" && p[1] == "-s" &&( p[2].search(/userchat\?username/) != -1)) {//获取用户对话信息
+                        } else if (p[0] == "curl" && p[1] == "-s" && (p[2].search(/userchat\?username/) != -1)) {//获取用户对话信息
 
                             try {
                                 var chatinfo = $.parseJSON(jmsg.msg[i].result);
                                 var result = json2list(chatinfo);
-                               // var chatTable = ConvertJsonToTable(chatinfo, 'chatlistinfo', 'hovertable', '用户对话');
+                                // var chatTable = ConvertJsonToTable(chatinfo, 'chatlistinfo', 'hovertable', '用户对话');
 
                                 titlestr = p[2].substr(62);
                                 str = unescape(result);
@@ -710,7 +707,7 @@
 
                 }
                 if (catinfores.length > 0) {
-                    opendialog(titlestr, catinfores,0);
+                    opendialog(titlestr, catinfores, 0);
                 }
                 if (infoArray.length == 0) {
 
@@ -734,17 +731,16 @@
                     }
                 }
                 var jsonHtmlTable = ConvertJsonToTable(infoArray, 'resid', 'hovertable', ' 服务信息');
-                var gcmd = "<div class=\"tailcmd\">运行命令【"+infoArray.length+"】(双击选择执行命令)：<div class=\"clickcmd\" align=\"center\">" + cmd + "</div></div>"
+                var gcmd = "<div class=\"tailcmd\">运行命令【" + infoArray.length + "】(双击选择执行命令)：<div class=\"clickcmd\" align=\"center\">" + cmd + "</div></div>"
                 $("#log").append($.cookie('sid') + " 结果:<br/> &nbsp;&nbsp;&nbsp;&nbsp;<pre>" + jsonHtmlTable + gcmd + "</pre><br/>");
                 $("#log").animate({ scrollTop: $("#log").prop("scrollHeight") }, 800);
                 $('.clickcmd').dblclick(function (e) {
-                    $(".ui-widget-content.ui-chatbox-input-box.ui-corner-all").val(event.srcElement.outerText);
+                    $(".ui-widget-content.ui-chatbox-input-box.ui-corner-all").val(this.textContent);
                 });
-                for (i = showdinfonum_for; i < showdinfonum; i++)
-                {
+                for (i = showdinfonum_for; i < showdinfonum; i++) {
                     $('#userlistinfo' + i).hide();
                 }
-
+                highlight();
                 lstring = result;
             }
         }
@@ -757,7 +753,7 @@
                               window.clearInterval(TimerID);
                               return;
                           }
-                          $.post("recvmsg.asp", $.toJSON({ sid: $.cookie('sid') }), function (result) {
+                          $.post("/chat/recvmsg.asp", $.toJSON({ sid: $.cookie('sid') }), function (result) {
                               ansrusult(result);
                           });
                       },
@@ -765,23 +761,37 @@
                 );
 
         }
+        var Browser = new Object();
+        Browser.isMozilla = (typeof document.implementation != 'undefined') && (typeof document.implementation.createDocument != 'undefined') && (typeof HTMLDocument != 'undefined');
+        Browser.isIE = window.ActiveXObject ? true : false;
+        Browser.isFirefox = (navigator.userAgent.toLowerCase().indexOf("firefox") != -1);
+        Browser.isSafari = (navigator.userAgent.toLowerCase().indexOf("safari") != -1);
+        Browser.isOpera = (navigator.userAgent.toLowerCase().indexOf("opera") != -1);
+
+
         function startrecv() {
-            if (typeof (EventSource) !== "undefined") {
-                var source = new EventSource("recvmsg.tes");
-
-                source.onmessage = function (result) {
-
-                    $(document).attr("title", "查询主机:" + $.cookie('sethostname'));
-                    var isScroll = jQuery("#chk2")[0].checked;
-                    if (isScroll) {
-                        event.target.close();
-                    }
-                    ansrusult(result.data);
-                };
-            }
-            else {
+            if (Browser.isFirefox)
+            {
                 resee();
+            } else
+            {
+                if (typeof (EventSource) !== "undefined") {
+                    var source = new EventSource("/chat/recvmsg.tes");
 
+                    source.onmessage = function (result) {
+
+                        $(document).attr("title", "查询主机:" + $.cookie('sethostname'));
+                        var isScroll = jQuery("#chk2")[0].checked;
+                        if (isScroll) {
+                            event.target.close();
+                        }
+                        ansrusult(result.data);
+                    };
+                }
+                else {
+                    resee();
+
+                }
             }
         }
 
@@ -877,7 +887,15 @@
 
             $("#tailsubmit").click(function (event, ui) {
 
-                tmsg = "tail -n " + $("#startline")[0].value + " " + tailfname + " -f";
+               
+                var isTail_f = jQuery("#tail_f")[0].checked;
+                if (isTail_f)
+                {
+                    tmsg = "tail -n " + $("#startline")[0].value + " " + tailfname+" -f ";
+                } else
+                {
+                    tmsg = "tail -n " + $("#startline")[0].value + " " + tailfname;
+                }
                 var grepstr = $("#grepchar")[0].value;
                 var grepline;
                 if ($("#grepline")[0].value == "" || $("#grepline")[0].value == "0")
@@ -885,7 +903,14 @@
                 else
                     grepline = $("#grepline")[0].value;
                 if (grepstr != "") {
-                    tmsg = "tail -n " + $("#startline")[0].value + " " + tailfname + " -f" + "|grep '" + grepstr + "' -a" + " -C " + grepline;
+                    if (isTail_f)
+                    {
+                        tmsg = "tail -n " + $("#startline")[0].value + " " + tailfname + " -f|grep '" + grepstr + "' -a" + " -C " + grepline;
+                    } else
+                    {
+                        tmsg = "tail -n " + $("#startline")[0].value + " " + tailfname + "|grep '" + grepstr + "' -a" + " -C " + grepline;
+                    }
+                   
                 }
                 $.post("/chat/sendmsg.asp", $.toJSON({ sendmsg: "set host clear" }), function (result) {
 
@@ -904,8 +929,7 @@
             });
             //knowledgesubmit
             // curl  -s  http://172.16.10.42/KnowledgeService2/queryv2?keyword1=%E6%AD%A6%E6%B1%89\&keyword2=.com
-            function k_submit()
-            {
+            function k_submit() {
                 var key1 = $("#keyword1")[0].value;
                 var key2 = $("#keyword2")[0].value;
                 tmsg = "curl -s http://172.16.10.42/KnowledgeService2/queryv2?keyword1=" + key1 + "\\&keyword2=" + key2;
@@ -925,8 +949,7 @@
                     });
                 });
             }
-            $("#knowledgesubmit").click(function (event, ui)
-            {
+            $("#knowledgesubmit").click(function (event, ui) {
                 k_submit();
             });
 
@@ -967,7 +990,7 @@
                 </div>
             </div>
         </li>
-        <li><a href="javascript::void(0)" onclick='choicehost()'>主机选择</a>
+        <li><a href="javascript:void(0)" onclick='choicehost()'>主机选择</a>
         <li class="menu_right">
 
         </li>
@@ -977,44 +1000,47 @@
                 <div class="col_1">
                     <h3>浏览目录</h3>
                     <ul>
-                        <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","ls -all /home")'>用户目录</a></li>
-                        <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","ls -all /var/log")'>系统日志</a></li>
-                        <li><a href="javascript::void(0)" onclick='queryuploadfile("输入","","ls -all ./page/update")'>上传文件</a></li>
+                        <li><a href="javascript:void(0)" onclick='sendolamsg("输入","","ls -all /home")'>用户目录</a></li>
+                        <li><a href="javascript:void(0)" onclick='sendolamsg("输入","","ls -all /var/log")'>系统日志</a></li>
+                        <li><a href="javascript:void(0)" onclick='queryuploadfile("输入","","ls -all ./page/update")'>上传文件</a></li>
                     </ul>
                 </div>
                 <div class="col_1">
                     <h3>服务查询</h3>
                     <ul>
-                        <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","free -m")'>内存</a></li>
-                        <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","top -bn 1")'>进程</a></li>
-                        <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","df -h")'>磁盘</a></li>
-                        <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","date")'>时间</a></li>
-                        <li><a href="javascript::void(0)" onclick='sendolamsg("输入", "", "curl -s http://127.0.0.1:8080/olaweb/admin/webadmin/state")'>在线用户</a></li>
+                        <li><a href="javascript:void(0)" onclick='sendolamsg("输入","","free -m")'>内存</a></li>
+                        <li><a href="javascript:void(0)" onclick='sendolamsg("输入","","top -bn 1")'>进程</a></li>
+                        <li><a href="javascript:void(0)" onclick='sendolamsg("输入","","df -h")'>磁盘</a></li>
+                        <li><a href="javascript:void(0)" onclick='sendolamsg("输入","","date")'>时间</a></li>
+                        <li><a href="javascript:void(0)" onclick='sendolamsg("输入", "", "curl -s http://127.0.0.1:8080/olaweb/admin/webadmin/state")'>在线用户</a></li>
                     </ul>
                 </div>
                 <div class="col_1">
                     <h3>对话系统日志</h3>
                     <ul>
-                        <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","ls -all /home/dlstest/apache-tomcat-7.0.37/logs")'>Tomcat日志</a></li>
-                        <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","ls -all /home/dlstest/apache-tomcat-7.0.37/logs/catalina.out")'>catalina.out</a></li>
-                        <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","ls -all /home/dlstest/apache-tomcat-7.0.37/logs/olalog")'>DS日志</a></li>
+                        <li><a href="javascript:void(0)" onclick='sendolamsg("输入","","ls -all /home/dlstest/apache-tomcat-7.0.37/logs")'>Tomcat日志</a></li>
+                        <li><a href="javascript:void(0)" onclick='sendolamsg("输入","","ls -all /home/dlstest/apache-tomcat-7.0.37/logs/catalina.out")'>catalina.out</a></li>
+                        <li><a href="javascript:void(0)" onclick='sendolamsg("输入","","ls -all /home/dlstest/apache-tomcat-7.0.37/logs/olalog")'>DS日志</a></li>
                     </ul>
                 </div>
                 <div class="col_1">
                     <h3>其他查询</h3>
                     <ul>
-                        <li><a href="javascript::void(0)" onclick='openquerykdialog()'>知识库查询</a></li>
+                        <li><a href="javascript:void(0)" onclick='openquerykdialog()'>知识库查询</a></li>
                     </ul>
                 </div>
                 <div class="col_1">
-                    <h3>辅助功能</h3>
+                    <h3>辅助功能：</h3>
+                    <p>
+                        终止操作：停止本会话提交的相关查询命令，如要继续查询，请点击"启动查询"
+                    </p>
                     <ul>
-                        <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","killall tail")'>关闭Tail</a></li>
-                        <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","killall cat")'>关闭Cat</a></li>
-                        <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","killall find")'>关闭find</a></li>
-                        <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","killall tar")'>停止日志文件打包</a></li>
-                        <li><a href="javascript::void(0)" alt="停止已经提交的所有操作，系统不再处理结束的请求" onclick='sendolamsg("输入","","unlock")'>停止服务</a></li>
-                        <li><a href="javascript::void(0)" alr="恢复服务,处理接受的请求" onclick='sendolamsg("输入","","lock")'>启动服务</a></li>
+                        <li><a href="javascript:void(0)" onclick='sendolamsg("输入","","block")'>终止查询</a></li>
+                        <li><a href="javascript:void(0)" onclick='sendolamsg("输入","","unblock")'>启动查询</a></li>
+                        <!--li><a href="javascript:void(0)" onclick='sendolamsg("输入","","killall find")'>关闭find</a></!--li>
+                        <li><a href="javascript:void(0)" onclick='sendolamsg("输入","","killall tar")'>停止日志文件打包</a></li-->
+                        <!--li><a href="javascript:void(0)" alt="停止已经提交的所有操作，系统不再处理结束的请求" onclick='sendolamsg("输入","","unlock")'>停止服务</a></li>
+                        <li><a href="javascript:void(0)" alr="恢复服务,处理接受的请求" onclick='sendolamsg("输入","","lock")'>启动服务</a></li-->
                         <li>停止消息滚动<input type="checkbox" id="chk2" class="checkall1" value="1" alt="可以看到系统内其他人请求的消息" /></li>
                         <li>查看所有消息<input type="checkbox" id="chk1" class="checkall1" value="1" alt="可以看到系统内其他人请求的消息" /></li>
                         <li><input type="button" id="chk1" value="打开聊天框" alt="打开聊天框" /></li>
@@ -1032,7 +1058,7 @@
                 <!-- Begin 3 columns container -->
                 <div class="col_1_4">
                     <section class="webdesigntuts-workshop">
-                        <form action="javascript::void(0)" method="">
+                        <form action="javascript:void(0)" method="">
                             <input id="searchfilename" type="search" placeholder="请输入需要查找的内容?">
                             <button id="searchfile">Search</button>
                         </form>
@@ -1049,14 +1075,14 @@
                 </div>
                 <div class="col_1_2">
                     <ul>
-                        <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","curl -s http://127.0.0.1:8080/olaweb/admin/fresh/updatecache?part=phoneregx")'>phoneregx</a></li>
-                        <li><a href="javascript::void(0)" onclick='sendolamsg("输入","","curl -s http://127.0.0.1:8080/olaweb/admin/fresh/updatecache?part=clientid")'>clientid</a></li>
-                        <!--li><a href="javascript::void(0)" onclick='sendolamsg("输入","","curl -s http://127.0.0.1:8080/olaweb/admin/fresh/updatecache?part=all")'>all</a></li-->
+                        <li><a href="javascript:void(0)" onclick='sendolamsg("输入","","curl -s http://127.0.0.1:8080/olaweb/admin/fresh/updatecache?part=phoneregx")'>phoneregx</a></li>
+                        <li><a href="javascript:void(0)" onclick='sendolamsg("输入","","curl -s http://127.0.0.1:8080/olaweb/admin/fresh/updatecache?part=clientid")'>clientid</a></li>
+                        <!--li><a href="javascript:void(0)" onclick='sendolamsg("输入","","curl -s http://127.0.0.1:8080/olaweb/admin/fresh/updatecache?part=all")'>all</a></li-->
                     </ul>
                 </div>
                 <div class="col_1_2">
                     <h3>自定义更新</h3>
-                    <form action="javascript::void(0)" method="">
+                    <form action="javascript:void(0)" method="">
                         <input id="db_update_text" type="search" placeholder="请输入更新的内容">
                         <button id="db_update_btn">更新</button>
                     </form>
@@ -1075,9 +1101,11 @@
             <input type="text" style="background-color:black" id="startline" value="1000"></input><br>
             <label>过滤字符</label>
             <input type="text" style="background-color:black" id="grepchar"></input><br>
-            <label>过滤字符后续行</label>
+            <label>后续行数</label>
             <input type="text" style="background-color:black" id="grepline"></input><br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            tail 带参数-f，滚动查询
+            <input type="checkbox" id="tail_f" value="1" alt="" /><br>
+             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
             <input style="background-color:black" id="tailsubmit" type="submit" value="确定" align="right">
     </div>
 
@@ -1093,4 +1121,5 @@
     </div>
 </body>
 </html>
+
 

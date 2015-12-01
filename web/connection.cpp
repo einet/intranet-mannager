@@ -404,7 +404,7 @@ void connection::do_read() {
 									finished = true;
 								}
 
-								boost::format fmter("{\"files\":[{\"name\":\"%s\",\"size\":%d,\"url\":\"%s\",\"thumbnailUrl\": \"%s\",\"deleteUrl\": \"%s\",\"deleteType\": \"DELETE\"}]}");
+								boost::format fmter("{\"files\":[{\"name\":\"%s\",\"size\":%d,\"url\":\"%s\",\"thumbnailUrl\": \"%s\",\"deleteUrl\": \"%s\",\"deleteType\": \"DELETE\"}]}\r\n\r\n");
 
 								if(finished)
 								{
@@ -460,7 +460,7 @@ void connection::do_read() {
 										} else
 										{
 											remove(filename.c_str());
-											boost::format fmter("{\"files\":[{\"name\":\"%s\",\"size\":%s,\"error\":\"%s\")}]}");
+											boost::format fmter("{\"files\":[{\"name\":\"%s\",\"size\":%s,\"error\":\"%s\")}]}\r\n\r\n");
 											fmter % filename % f_len % "文件接受错误";
 											ansmsg = fmter.str();
 										}
@@ -560,7 +560,7 @@ void connection::do_read() {
 								str = str.substr(0,str.length()-1);
 							}
 							str += "]}";
-							boost::format fmter("{\"success\":%s,\"result\":%s}");
+							boost::format fmter("{\"success\":%s,\"result\":%s}\r\n\r\n");
 							fmter % "true" % str;
 
 							reply_.status = reply::ok;
@@ -617,7 +617,7 @@ void connection::do_read() {
 									return;
 								}
 							}
-							boost::format fmter("{\"success\":%s,\"id\":\"%s\",\"webhostname\":\"%s\",\"status\":\"%d\"}");
+							boost::format fmter("{\"success\":%s,\"id\":\"%s\",\"webhostname\":\"%s\",\"status\":\"%d\"}\r\n\r\n");
 							{
 								string md5str;
 								if(sessionid.empty())
@@ -678,11 +678,18 @@ void connection::do_read() {
 													if(flag == 0)
 													{
 														if(process_sendcmd(ppstr))
-														mcast_r->send_to(sessionid,ppstr,"",0);
+														{
+															mcast_r->send_to(sessionid,ppstr,"",0);
+														}
 														else
-														mcast_r->send_to(sessionid,ppstr,"",1);
+														{
+															mcast_r->send_to(sessionid,ppstr,"",1);
+														}
+
 													} else
-													mcast_r->send_to(sessionid,ppstr,"",flag);
+													{
+														mcast_r->send_to(sessionid,ppstr,"",flag);
+													}
 												}
 											}
 										}
@@ -714,7 +721,7 @@ void connection::do_read() {
 							//收到消息，通过组播发送，接受组播数据回传到ｗｅｂ端
 							string msg;
 							msg = m_sessionID.ReadFunction(sessionid);
-							boost::format fmter("{\"success\":%s,\"webhostname\":\"%s\",\"status\":\"%d\",\"msg\":%s}");
+							boost::format fmter("{\"success\":%s,\"webhostname\":\"%s\",\"status\":\"%d\",\"msg\":%s}\r\n\r\n\r\n\r\n");
 
 							fmter % "true" % hname % 1 % msg;
 
@@ -783,7 +790,7 @@ void connection::do_read() {
 							string msg;
 							msg = m_sessionID.ReadFunction(sessionid);
 
-							boost::format fmter("data:{\"success\":%s,\"webhostname\":\"%s\",\"status\":\"%d\",\"msg\":%s}\r\n\r\n");
+							boost::format fmter("data:{\"success\":%s,\"webhostname\":\"%s\",\"status\":\"%d\",\"msg\":%s}\r\n\r\n\r\n\r\n");
 
 							fmter % "true" % hname % 1 % msg;
 							bool bgzip = false;

@@ -120,7 +120,7 @@ void console_input(CMcast_ptr m_ptr) {
 		std::string cmd;
 
 		std::getline(std::cin, cmd);
-		boost::algorithm::trim(cmd);
+   		boost::algorithm::trim(cmd);
 		if (!cmd.empty()) {
 			if (cmd == "get host") {
 				ReadLock r_lock(ssmapLock);
@@ -251,19 +251,39 @@ void callpid_sh(const std::string& sid, const std::string& script,
 		std::cout << "System normal state!" << std::endl;
 		m_sessionID.SetUnlock(false);
 		m_sessionID.SetKillFlag(sid, false);
+		m_ptr->send_to(sid, script, "set ok!", 1);
+		return;
+	}else if (script.find("unblock", 0) == 0)
+	 {
+		std::cout << "User normal state!" << std::endl;
+		m_sessionID.SetKillFlag(sid, false);
+		m_ptr->send_to(sid, script, "set ok!", 1);
+		return;
+	} else if (script.find("block", 0) == 0) {
+		m_sessionID.SetKillFlag(sid, true);
+		m_ptr->send_to(sid, script, "set ok!", 1);
 		return;
 	}
+	else if (script.find("unlock", 0) == 0) {
+		m_sessionID.SetUnlock(true);
+		std::cout << "System unlock state!" << std::endl;
+		m_ptr->send_to(sid, script, "set ok!", 1);
+		return;
+	}
+
+	 if (m_sessionID.GetKillFlag(sid)) {
+	 		m_ptr->send_to(sid, script, ": 您的会话已经锁定!请选择\"启动查询\"!", 1);
+	 		return;
+	 	}
 	//开启定时器
 	timer_ptr m_t_p(new boost::asio::deadline_timer(io_service));
 
 	int infp = 0;
 	int fp = 0;
-	pid_t pid = NULL;
-	pid_t pid1 = NULL;
+	pid_t pid = 0;
+	pid_t pid1 = 0;
 	char result_buf[2048 * 1024 * 4];
 
-	//需要关注是否需要强制关闭
-	bool killflag = false;
 	int timeout = 50;
 	try {
 
@@ -271,17 +291,11 @@ void callpid_sh(const std::string& sid, const std::string& script,
 				|| script.find("./package.sh", 0) == 0
 				|| script.find("cat", 0) == 0 || script.find("find", 0) == 0) {
 			timeout = 300;
-			killflag = true;
+
 			pid = popen2(script.c_str(), &infp, &fp);
-		} else if (script.find("killall", 0) == 0) {
-			m_sessionID.SetKillFlag(sid, true);
-		}
-		else if (script.find("unlock", 0) == 0) {
-			m_sessionID.SetUnlock(true);
-			std::cout << "System unlock state!" << std::endl;
 		}
 		else {
-			m_sessionID.SetKillFlag(sid, false);
+
 			pid = popen2(script.c_str(), &infp, &fp);
 		}
 		tpidmout_ptr m_tptr(new CPidTimeout(pid));
@@ -301,35 +315,31 @@ void callpid_sh(const std::string& sid, const std::string& script,
 		flags |= O_NONBLOCK;
 		fcntl(d, F_SETFL, flags);
 		ssize_t r = 0;
-		//int tmoutnum =100;
+		std::cout << "Recv cmd:" << script<<",pid:"<<pid << std::endl;
 		while (true) {
 			if (m_sessionID.GetUnlock()) {
 				std::cout << "Recv unlock sig!" << script << std::endl;
 				m_t_p->cancel();
-				m_tptr->killpid();
-
-				std::cout << "Recv unlock sig!" << script << std::endl;
+				std::cout << "Recv unlock sig!" << script<<"pid:"<<pid << std::endl;
 				close(infp);
 				close(fp);
 				break;
 			}
-			if (killflag) {
-
-				if (m_sessionID.GetKillFlag(sid)) {
-					m_t_p->cancel();
-					pid1 = pid;
-					std::cout << "Recv kill sig!" << script << std::endl;
-					close(infp);
-					close(fp);
-					break;
-				}
+			if (m_sessionID.GetKillFlag(sid)) {
+				m_t_p->cancel();
+				pid1 = pid;
+				std::cout << "Recv kill sig!" << script << "pid:" << pid
+						<< std::endl;
+				close(infp);
+				close(fp);
+				break;
 			}
+			::usleep(10);
 			r = ::read(d, result_buf, sizeof(result_buf));
+
 			if (r > 0) {
 				result_buf[r] = '\0';
 				m_ptr->send_to(sid, script, result_buf, 1);
-
-
 				m_t_p->cancel();
 				m_t_p->expires_from_now(boost::posix_time::seconds(timeout));
 				m_t_p->async_wait(
@@ -347,24 +357,13 @@ void callpid_sh(const std::string& sid, const std::string& script,
 				break;
 			}
 			if (errno == EAGAIN) {
-				/*tmoutnum --;
-				 if(tmoutnum<=0)
-				 {
-				 close(infp);
-				 close(fp);
-				 break;
-				 }*/
-				::usleep(10);
+
+
 				continue;
 			}
 
 		}
 		m_tptr->killpid();
-		if(pid1 == pid)
-			m_sessionID.SetKillFlag(sid, false);
-
-		//m_t_p->cancel();
-
 	} catch (...) {
 		std::cout << "error!" << std::endl;
 		return;
@@ -796,15 +795,15 @@ void CMcast::send_to(const string & sid, const string & cmd, std::string msg,
 		m_zipptr->GzipFromData((char*) msg.c_str(), (const int) msg.size(), os);
 
 		while (!os.eof()) {
-			char *bt = new char[1024 + 1];
+			char bt[1024 + 1];
 			std::streamsize i = read(os, &bt[0], 1024);
 			if (i < 0) {
-				delete[] bt;
+
 				break;
 			} else {
 				st += i;
 				zipmsg.append(bt, i);
-				delete[] bt;
+
 			}
 		}
 	}
