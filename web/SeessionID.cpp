@@ -64,13 +64,19 @@ std::string SeessionID::ReadFunction(std::string sid)
 	return msg;
 }
 void SeessionID::Clear() {
-	WriteLock w_lock1(msgLock);
-	mmap.clear();
-	WriteLock w_lock(myLock);
-	ptrsmap.clear();
+	SetUnlock(true);
+	{
+		WriteLock w_lock1(msgLock);
+		mmap.clear();
+	}
+	{
+		WriteLock w_lock(myLock);
+		ptrsmap.clear();
+	}
 }
 void SeessionID::Clear(const std::string & sid) {
 	WriteLock w_lock(myLock);
+	ptrsmap[sid].killflag = true;
 	ptrsmap[sid].ptr_s.clear();
 }
 Ptr_strVector SeessionID::GetVect(const std::string & sid) {
