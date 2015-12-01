@@ -34,7 +34,7 @@ typedef boost::shared_lock<Lock> ReadLock;
 
 typedef struct sessionStruct
 {
-	int i;
+	std::atomic<int> i;
 	std::string ipaddr;
 	Ptr_strVector ptr_s;
 	bool killflag;

@@ -9,7 +9,7 @@
 #include <boost/regex.hpp>
 #include "../JsonMsg.h"
 
-std::map<std::string,Lock> myLock;
+Lock myLock;
 Lock msgLock;
 SeessionID m_sessionID;
 
@@ -24,7 +24,7 @@ SeessionID::~SeessionID() {
 
 }
 std::string SeessionID::GetIPAddr(const std::string & sid) {
-	ReadLock r_lock(myLock[sid]);
+	ReadLock r_lock(myLock);
 	return ptrsmap[sid].ipaddr;
 }
 bool SeessionID::GetUnlock() {
@@ -38,68 +38,57 @@ void SeessionID::SetUnlock(bool val) {
 }
 std::string SeessionID::ReadFunction(std::string sid)
 {
-	int id=0;
-	{
-		ReadLock r_lock(myLock[sid]);
-		id = ptrsmap[sid].i;
-	}
-
 	std::string msg;
 	bool num = false;
 	ReadLock r_lock_msg(msgLock);
-	if(mmap.size()>0)
-	{
-		int pknum = id;
-		for (msgMap::const_iterator i = mmap.begin(), e = mmap.end(); i != e; ++i)
-		{
+	if (mmap.size() > 0) {
+		int pknum = ptrsmap[sid].i;
+		int id = pknum;
+		for (msgMap::const_iterator i = mmap.begin(), e = mmap.end(); i != e;
+				++i) {
 			if (i->i <= id)
 				continue;
 			msg += i->msg;
 			msg += ",";
 			num = true;
 			pknum = i->i;
-		}
-		{
-			WriteLock w_lock(myLock[sid]);
-			ptrsmap[sid].i = pknum;
-		}
 
+		}
+		ptrsmap[sid].i = pknum;
 	}
-	if (num)
-	{
+	if (num) {
 		msg = msg.substr(0, msg.length() - 1);
-
 	}
 	msg = "[" + msg;
 	msg = msg + "]";
-
 	return msg;
 }
 void SeessionID::Clear() {
-	WriteLock w_lock(msgLock);
+	WriteLock w_lock1(msgLock);
 	mmap.clear();
+	WriteLock w_lock(myLock);
 	ptrsmap.clear();
 }
 void SeessionID::Clear(const std::string & sid) {
-	WriteLock w_lock(myLock[sid]);
+	WriteLock w_lock(myLock);
 	ptrsmap[sid].ptr_s.clear();
 }
 Ptr_strVector SeessionID::GetVect(const std::string & sid) {
-	ReadLock r_lock(myLock[sid]);
+	ReadLock r_lock(myLock);
 	return ptrsmap[sid].ptr_s;
 }
 void SeessionID::SetKillFlag(const std::string & sid, bool flag) {
-	WriteLock w_lock(myLock[sid]);
+	WriteLock w_lock(myLock);
 	//std::cout<<"set killflag:"<<sid<<" "<<flag <<std::endl;
 	ptrsmap[sid].killflag = flag;
 }
 bool SeessionID::GetKillFlag(const std::string & sid) {
-	ReadLock r_lock(myLock[sid]);
+	ReadLock r_lock(myLock);
 	//std::cout<<"get killflag:"<<sid<<" "<< ptrsmap[sid].killflag<<std::endl;
 	return ptrsmap[sid].killflag;
 }
 void SeessionID::push_back(const std::string & sid, const std::string str) {
-	WriteLock w_lock(myLock[sid]);
+	WriteLock w_lock(myLock);
 	std::vector<std::string> value;
 	boost::regex regex1(" ", boost::regbase::normal | boost::regbase::icase);
 	std::string mstr = str;
@@ -139,12 +128,11 @@ void SeessionID::WriteFunction(std::string msg) {
 }
 void SeessionID::WriteHostInfo(const std::string& sid,
 		const std::string& hostname) {
-	WriteLock w_lock(myLock[sid]);
+	WriteLock w_lock(myLock);
 	ptrsmap[sid].ptr_s.push_back(hostname);
 
 }
 Ptr_strVector SeessionID::GetHostInfo(const std::string& sid) {
-	ReadLock r_lock(myLock[sid]);
-
+	ReadLock r_lock(myLock);
 	return ptrsmap[sid].ptr_s;
 }
