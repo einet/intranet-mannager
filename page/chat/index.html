@@ -122,8 +122,7 @@
             });
 
         }
-        function highlight()
-        {
+        function highlight() {
             $(".highlightclass").mouseover(function (event) {
                 $(this).css({ "background-color": "yellow", "font-size": "120%" });
 
@@ -572,7 +571,10 @@
                             delete infoArray[j].flag;
                             j++;
 
-                        } else if (p[0] == "ls" && p[1] == "-all" && jmsg.msg[i].flag == 1) {
+                        } else if ((p[0] == "set" && p[1] == "host") || (p[0]=="clear" && p[1]=="all"))
+                        {
+                            continue;
+                        }else if (p[0] == "ls" && p[1] == "-all" && jmsg.msg[i].flag == 1) {
                             infoArray[j] = jmsg.msg[i];
                             infoArray[j].result = infoArray[j].result.replace(/\r\n/g, "\n")
                             var page = infoArray[j].result.split("\n");
@@ -770,11 +772,9 @@
 
 
         function startrecv() {
-            if (Browser.isFirefox)
-            {
+            if (Browser.isFirefox) {
                 resee();
-            } else
-            {
+            } else {
                 if (typeof (EventSource) !== "undefined") {
                     var source = new EventSource("/chat/recvmsg.tes");
 
@@ -887,13 +887,11 @@
 
             $("#tailsubmit").click(function (event, ui) {
 
-               
+
                 var isTail_f = jQuery("#tail_f")[0].checked;
-                if (isTail_f)
-                {
-                    tmsg = "tail -n " + $("#startline")[0].value + " " + tailfname+" -f ";
-                } else
-                {
+                if (isTail_f) {
+                    tmsg = "tail -n " + $("#startline")[0].value + " " + tailfname + " -f ";
+                } else {
                     tmsg = "tail -n " + $("#startline")[0].value + " " + tailfname;
                 }
                 var grepstr = $("#grepchar")[0].value;
@@ -903,14 +901,12 @@
                 else
                     grepline = $("#grepline")[0].value;
                 if (grepstr != "") {
-                    if (isTail_f)
-                    {
+                    if (isTail_f) {
                         tmsg = "tail -n " + $("#startline")[0].value + " " + tailfname + " -f|grep '" + grepstr + "' -a" + " -C " + grepline;
-                    } else
-                    {
+                    } else {
                         tmsg = "tail -n " + $("#startline")[0].value + " " + tailfname + "|grep '" + grepstr + "' -a" + " -C " + grepline;
                     }
-                   
+
                 }
                 $.post("/chat/sendmsg.asp", $.toJSON({ sendmsg: "set host clear" }), function (result) {
 
@@ -1105,7 +1101,7 @@
             <input type="text" style="background-color:black" id="grepline"></input><br>
             tail 带参数-f，滚动查询
             <input type="checkbox" id="tail_f" value="1" alt="" /><br>
-             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
             <input style="background-color:black" id="tailsubmit" type="submit" value="确定" align="right">
     </div>
 
@@ -1121,5 +1117,6 @@
     </div>
 </body>
 </html>
+
 
 

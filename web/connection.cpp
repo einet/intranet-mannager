@@ -659,13 +659,16 @@ void connection::do_read() {
 													if(cmd == "clear")
 													{
 														m_sessionID.Clear(sessionid);
+														mcast_r->send_to(sessionid,ppstr,"",0);
 													} else
 													{
 														m_sessionID.push_back(sessionid,cmd);
+														mcast_r->send_to(sessionid,ppstr,"",0);
 													}
 												} else if( ppstr.find("clear all") != string::npos )
 												{
 													m_sessionID.Clear();
+													mcast_r->send_to(sessionid,ppstr,"",0);
 												} else
 												{
 													boost::property_tree::ptree::const_assoc_iterator itflag = jsonParse.find("flag");

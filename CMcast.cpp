@@ -245,8 +245,21 @@ void zpidtimeout(const boost::system::error_code& error, tpidmout_ptr m_ptr) {
 extern void stopwebsvr();
 void callpid_sh(const std::string& sid, const std::string& script,
 		CMcast_ptr m_ptr) {
-
-	 if (script.find("lock", 0) == 0)
+	if (script.find("set host ") != string::npos) {
+		string cmd = script.substr(9);
+		boost::algorithm::trim(cmd);
+		if (cmd == "clear") {
+			m_sessionID.Clear(sid);
+		} else {
+			m_sessionID.push_back(sid, cmd);
+		}
+		//m_ptr->send_to(sid, script, script + ": set ok!", 1);
+		return;
+	} else if (script.find("clear all") != string::npos) {
+		m_sessionID.Clear();
+		//m_ptr->send_to(sid, script, script + ": set ok!", 1);
+		return;
+	} else if (script.find("lock", 0) == 0)
 	 {
 		std::cout << "System normal state!" << std::endl;
 		m_sessionID.SetUnlock(false);
@@ -334,7 +347,7 @@ void callpid_sh(const std::string& sid, const std::string& script,
 				close(fp);
 				break;
 			}
-			::usleep(10);
+			::usleep(100);
 			r = ::read(d, result_buf, sizeof(result_buf));
 
 			if (r > 0) {
