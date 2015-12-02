@@ -254,40 +254,40 @@ void callpid_sh(const std::string& sid, const std::string& script,
 			m_sessionID.push_back(sid, cmd);
 		}
 		//m_ptr->send_to(sid, script, script + ": set ok!", 1);
+
 		return;
 	} else if (script.find("clear all") != string::npos) {
 		m_sessionID.Clear();
 		//m_ptr->send_to(sid, script, script + ": set ok!", 1);
+
 		return;
-	} else if (script.find("lock", 0) == 0)
-	 {
+	} else if (script.find("lock", 0) == 0) {
 		std::cout << "System normal state!" << std::endl;
 		m_sessionID.SetUnlock(false);
 		m_sessionID.SetKillFlag(sid, false);
 		m_ptr->send_to(sid, script, "set ok!", 1);
 		return;
-	}else if (script.find("unblock", 0) == 0)
-	 {
+	} else if (script.find("unblock", 0) == 0) {
 		std::cout << "User normal state!" << std::endl;
 		m_sessionID.SetKillFlag(sid, false);
 		m_ptr->send_to(sid, script, "set ok!", 1);
+
 		return;
 	} else if (script.find("block", 0) == 0) {
 		m_sessionID.SetKillFlag(sid, true);
 		m_ptr->send_to(sid, script, "set ok!", 1);
 		return;
-	}
-	else if (script.find("unlock", 0) == 0) {
+	} else if (script.find("unlock", 0) == 0) {
 		m_sessionID.SetUnlock(true);
 		std::cout << "System unlock state!" << std::endl;
 		m_ptr->send_to(sid, script, "set ok!", 1);
+
 		return;
 	}
-
-	 if (m_sessionID.GetKillFlag(sid)) {
-	 		m_ptr->send_to(sid, script, ": 您的会话已经锁定!请选择\"启动查询\"!", 1);
-	 		return;
-	 	}
+	if (m_sessionID.GetKillFlag(sid)) {
+		m_ptr->send_to(sid, script, ": 您的会话已经锁定!请选择\"启动查询\"!", 1);
+		return;
+	}
 	//开启定时器
 	timer_ptr m_t_p(new boost::asio::deadline_timer(io_service));
 
@@ -738,6 +738,17 @@ void CMcast::handle_receive_from(const boost::system::error_code& error,
 					mapHost[j_ptr->GetHost()] = addr;
 				}
 
+			}
+			//如果收到心跳包，则继续接受
+			if (flag == 3) {
+				socket_.async_receive_from(
+						boost::asio::buffer(inbound_data_.data(), max_length),
+						sender_endpoint_,
+						boost::bind(&CMcast::handle_receive_from,
+								shared_from_this(),
+								boost::asio::placeholders::error,
+								boost::asio::placeholders::bytes_transferred));
+				return;
 			}
 			//加入处理线程
 			workthread_pool_ptr->schedule(
