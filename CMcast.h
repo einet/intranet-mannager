@@ -22,7 +22,7 @@
 #include "GzipProcess.h"
 #include <sys/types.h>
 #include <sys/wait.h>
-
+#include "JsonMsg.h"
 //const short multicast_port = 32001;
 const int max_message_count = 10;
 using namespace boost::threadpool;
@@ -61,17 +61,40 @@ public:
 	~CPidTimeout() {
 	}
 	int killpid() {
-		flag = true;
-		printf("kill子进程:%d\n",pid);
-		int res = kill(pid, SIGKILL);
-		int status;
-		printf("等待子进程退出status\n");
-		if (waitpid(-1, &status, 0) != -1)     //!> 参数是-1就是等待所有的子进程
-		{
-			printf("子进程退出status：%d\n", status);
-		}
+		int status, retval = 0;
+		if (0 == (waitpid(pid, &status, WNOHANG))) {
+			printf("kill子进程:%d\n", pid);
+			flag = true;
+			retval = kill(pid, SIGKILL);
 
-		return res;
+			if (retval==0) {
+
+				printf("等待子进程(%d)退出\n", pid);
+				do{
+					retval = waitpid(pid, &status, WNOHANG);
+					if(retval ==0)
+					{
+						::usleep(100);
+					}
+				}while(retval==0);
+
+				if (WIFEXITED(status)) {
+					printf("exited, status=%d\n", WEXITSTATUS(status));
+				} else if (WIFSIGNALED(status)) {
+					printf("killed by signal %d\n", WTERMSIG(status));
+				} else if (WIFSTOPPED(status)) {
+					printf("stopped by signal %d\n", WSTOPSIG(status));
+				} else if (WIFCONTINUED(status)) {
+					printf("continued\n");
+				}
+				printf("子进程退出(%d)：%d\n", pid,status);
+
+			} else {
+				printf("进程退出(%d)status：%d\n", pid, status);
+			}
+
+		}
+		return retval;
 	}
 	bool get() {
 		return flag;
@@ -105,7 +128,8 @@ public:
 	void handle_send(const boost::system::error_code& error);
 
 	void send_to(std::string msg, int flag = 0);
-	void send_to(const string & sid,const string & cmd, std::string msg, int flag = 0);
+	void send_to(const string & sid, const string & cmd, std::string msg,
+			int flag = 0);
 
 	void start();
 
@@ -124,7 +148,8 @@ private:
 	enum {
 		header_length = 8
 	};
-
+	void process_data(JsonMsg_ptr j_ptr, const std::string& addr,
+			const int& port, int flag);
 	std::string outbound_header_;
 	std::vector<char> inbound_data_;
 	CGzipProcess_ptr m_zipptr;
@@ -132,6 +157,8 @@ private:
 };
 typedef boost::shared_ptr<boost::asio::deadline_timer> timer_ptr;
 typedef boost::shared_ptr<CMcast> CMcast_ptr;
-void print_data(const std::string& str, const std::string& addr,
-		const int& port, CMcast_ptr m_ptr, int flag);
+///*void print_data(const std::string& str, const std::string& addr,
+//		const int& port, CMcast_ptr m_ptr, int flag);*/
+void print_data(JsonMsg_ptr j_ptr, const std::string& addr, const int& port,
+		CMcast_ptr m_ptr, int flag);
 #endif /* CMCAST_H_ */

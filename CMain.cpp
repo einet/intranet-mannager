@@ -17,6 +17,7 @@
 #include <execinfo.h>
 using namespace boost::threadpool;
 boost::asio::io_service io_service;
+boost::asio::io_service work_io_service;
 
 //工作线程池
 pool_ptr workthread_pool_ptr;
@@ -87,7 +88,19 @@ void recv_thread(std::string ipdaar, std::string maddr,const short port) {
 					boost::asio::ip::address::from_string(ipdaar),
 					boost::asio::ip::address::from_string(maddr),port));
 	mcast_r->start();
-	io_service.run();
+	boost::shared_ptr<boost::asio::io_service::work> work(new boost::asio::io_service::work(work_io_service));
+	boost::shared_ptr<boost::thread> thread(
+			new boost::thread(
+					boost::bind(&boost::asio::io_service::run, &io_service)));
+
+	boost::shared_ptr<boost::thread> thread1(
+			new boost::thread(
+					boost::bind(&boost::asio::io_service::run,
+							&work_io_service)));
+
+
+	thread->join();
+	thread1->join();
 }
 void freshregx()
 {

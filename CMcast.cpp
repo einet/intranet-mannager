@@ -5,6 +5,7 @@
  *      Author: zlx
  *
  *  bugfix:修改popen打开文件read时无法终止的问题
+ *  单独io时，持续执行脚本时存在无法接受数据的问题
  */
 
 #include "CMcast.h"
@@ -16,7 +17,7 @@ using namespace std;
 using namespace boost::algorithm;
 char hname[1024];
 extern boost::asio::io_service io_service;
-
+extern boost::asio::io_service work_io_service;
 //主机列表
 
 ssmap mapHost;
@@ -120,7 +121,7 @@ void console_input(CMcast_ptr m_ptr) {
 		std::string cmd;
 
 		std::getline(std::cin, cmd);
-   		boost::algorithm::trim(cmd);
+		boost::algorithm::trim(cmd);
 		if (!cmd.empty()) {
 			if (cmd == "get host") {
 				ReadLock r_lock(ssmapLock);
@@ -245,56 +246,13 @@ void zpidtimeout(const boost::system::error_code& error, tpidmout_ptr m_ptr) {
 extern void stopwebsvr();
 void callpid_sh(const std::string& sid, const std::string& script,
 		CMcast_ptr m_ptr) {
-	if (script.find("set host ") != string::npos) {
-		string cmd = script.substr(9);
-		boost::algorithm::trim(cmd);
-		if (cmd == "clear") {
-			m_sessionID.Clear(sid);
-		} else {
-			m_sessionID.push_back(sid, cmd);
-		}
-		//m_ptr->send_to(sid, script, script + ": set ok!", 1);
-
-		return;
-	} else if (script.find("clear all") != string::npos) {
-		m_sessionID.Clear();
-		//m_ptr->send_to(sid, script, script + ": set ok!", 1);
-
-		return;
-	} else if (script.find("lock", 0) == 0) {
-		std::cout << "System normal state!" << std::endl;
-		m_sessionID.SetUnlock(false);
-		m_sessionID.SetKillFlag(sid, false);
-		m_ptr->send_to(sid, script, "set ok!", 1);
-		return;
-	} else if (script.find("unblock", 0) == 0) {
-		std::cout << "User normal state!" << std::endl;
-		m_sessionID.SetKillFlag(sid, false);
-		m_ptr->send_to(sid, script, "set ok!", 1);
-
-		return;
-	} else if (script.find("block", 0) == 0) {
-		m_sessionID.SetKillFlag(sid, true);
-		m_ptr->send_to(sid, script, "set ok!", 1);
-		return;
-	} else if (script.find("unlock", 0) == 0) {
-		m_sessionID.SetUnlock(true);
-		std::cout << "System unlock state!" << std::endl;
-		m_ptr->send_to(sid, script, "set ok!", 1);
-
-		return;
-	}
-	if (m_sessionID.GetKillFlag(sid)) {
-		m_ptr->send_to(sid, script, ": 您的会话已经锁定!请选择\"启动查询\"!", 1);
-		return;
-	}
 	//开启定时器
 	timer_ptr m_t_p(new boost::asio::deadline_timer(io_service));
 
 	int infp = 0;
 	int fp = 0;
 	pid_t pid = 0;
-	pid_t pid1 = 0;
+
 	char result_buf[2048 * 1024 * 4];
 
 	int timeout = 50;
@@ -306,8 +264,7 @@ void callpid_sh(const std::string& sid, const std::string& script,
 			timeout = 300;
 
 			pid = popen2(script.c_str(), &infp, &fp);
-		}
-		else {
+		} else {
 
 			pid = popen2(script.c_str(), &infp, &fp);
 		}
@@ -328,26 +285,27 @@ void callpid_sh(const std::string& sid, const std::string& script,
 		flags |= O_NONBLOCK;
 		fcntl(d, F_SETFL, flags);
 		ssize_t r = 0;
-		std::cout << "Recv cmd:" << script<<",pid:"<<pid << std::endl;
+		std::cout << "Recv cmd:" << script << ",pid:" << pid << std::endl;
 		while (true) {
 			if (m_sessionID.GetUnlock()) {
-				std::cout << "Recv unlock sig!" << script << std::endl;
-				m_t_p->cancel();
-				std::cout << "Recv unlock sig!" << script<<"pid:"<<pid << std::endl;
-				close(infp);
-				close(fp);
-				break;
-			}
-			if (m_sessionID.GetKillFlag(sid)) {
-				m_t_p->cancel();
-				pid1 = pid;
-				std::cout << "Recv kill sig!" << script << "pid:" << pid
+				std::cout << " Recv unlock sig!" << script << "pid:" << pid
 						<< std::endl;
 				close(infp);
 				close(fp);
+				m_t_p->cancel();
+				m_tptr->killpid();
 				break;
 			}
-			::usleep(100);
+			if (m_sessionID.GetKillFlag(sid)) {
+				std::cout << " Recv kill sig!" << script << "pid:" << pid
+						<< std::endl;
+				close(infp);
+				close(fp);
+				m_t_p->cancel();
+				m_tptr->killpid();
+				break;
+			}
+			::usleep(50);
 			r = ::read(d, result_buf, sizeof(result_buf));
 
 			if (r > 0) {
@@ -370,89 +328,17 @@ void callpid_sh(const std::string& sid, const std::string& script,
 				break;
 			}
 			if (errno == EAGAIN) {
-
-
 				continue;
 			}
 
 		}
-		m_tptr->killpid();
+
 	} catch (...) {
 		std::cout << "error!" << std::endl;
 		return;
 	}
 }
 
-//设置为非阻塞读取数据，加上超时１秒的设计
-void call_sh(const std::string& sid, const std::string& script,
-		CMcast_ptr m_ptr) {
-	//开启定时器
-	timer_ptr m_t_p(new boost::asio::deadline_timer(io_service));
-
-	std::string resultstr;
-	int rc = 0; // 用于接收命令返回值
-	FILE *fp;
-	char result_buf[2048 * 1024 * 4];
-	try {
-		fp = popen(script.c_str(), "r");
-
-		tmout_ptr m_tptr(new CTimeout(false));
-		m_t_p->expires_from_now(boost::posix_time::seconds(1));
-		m_t_p->async_wait(
-				boost::bind(&ztimeout, boost::asio::placeholders::error,
-						m_tptr));
-		if (NULL == fp) {
-			return;
-		}
-
-		int d = fileno(fp);
-
-		int flags;
-		flags = fcntl(d, F_GETFL);
-		flags |= O_NONBLOCK;
-		fcntl(d, F_SETFL, flags);
-		ssize_t r = 0;
-		while (true) {
-			r = ::read(d, result_buf, sizeof(result_buf));
-			if (r > 0) {
-				result_buf[r] = '\0';
-				m_ptr->send_to(sid, script, result_buf, 1);
-
-				m_t_p->cancel();
-				m_t_p->expires_from_now(boost::posix_time::seconds(30));
-				m_t_p->async_wait(
-						boost::bind(&ztimeout, boost::asio::placeholders::error,
-								m_tptr));
-				continue;
-			} else if (r == -1 && errno != EAGAIN) {
-				std::cout << "error!" << errno << std::endl;
-				break;
-
-			}
-			if (m_tptr->get()) {
-				std::cout << "Time out!" << std::endl;
-				break;
-			}
-			if (errno == EAGAIN) {
-				::usleep(10);
-				continue;
-			}
-		}
-		m_t_p->cancel();
-
-	} catch (...) {
-		std::cout << "error!" << std::endl;
-		return;
-	}
-
-	rc = pclose(fp);
-	if (-1 == rc) {
-
-		return;
-	} else {
-
-	}
-}
 #include "./web/SeessionID.h"
 extern SeessionID m_sessionID;
 void print_data(JsonMsg_ptr j_ptr, const std::string& addr, const int& port,
@@ -750,14 +636,60 @@ void CMcast::handle_receive_from(const boost::system::error_code& error,
 								boost::asio::placeholders::bytes_transferred));
 				return;
 			}
-			//加入处理线程
-			workthread_pool_ptr->schedule(
-					boost::bind(print_data, j_ptr, addr, get_remote_port(),
-							shared_from_this(), flag));
+			if (j_ptr->invect(hname) && flag == 0) {
+				string script = j_ptr->cmdString;
+				string sid = j_ptr->sid;
+				std::cout << "Recv a script:" << script << std::endl;
+				if (script.find("set host ") != string::npos) {
+					string cmd = script.substr(9);
+					boost::algorithm::trim(cmd);
+					if (cmd == "clear") {
+						m_sessionID.Clear(sid);
+					} else {
+						m_sessionID.push_back(sid, cmd);
+					}
+					//m_ptr->send_to(sid, script, script + ": set ok!", 1);
+					goto endloop;
+				} else if (script.find("clear all") != string::npos) {
+					m_sessionID.Clear();
+					//m_ptr->send_to(sid, script, script + ": set ok!", 1);
+					goto endloop;
+				} else if (script.find("lock", 0) == 0) {
+					std::cout << "System normal state!" << std::endl;
+					m_sessionID.SetUnlock(false);
+					m_sessionID.SetKillFlag(sid, false);
+					send_to(sid, script, "set ok!", 1);
+					goto endloop;
+				} else if (script.find("unblock", 0) == 0) {
+					std::cout << "User normal state!" << std::endl;
+					m_sessionID.SetKillFlag(sid, false);
+					send_to(sid, script, "set ok!", 1);
+					goto endloop;
+				} else if (script.find("block", 0) == 0) {
+					m_sessionID.SetKillFlag(sid, true);
+					send_to(sid, script, "set ok!", 1);
+					goto endloop;
+				} else if (script.find("unlock", 0) == 0) {
+					m_sessionID.SetUnlock(true);
+					std::cout << "System unlock state!" << std::endl;
+					send_to(sid, script, "set ok!", 1);
+					goto endloop;
+				}
+				if (m_sessionID.GetKillFlag(sid)) {
+					send_to(sid, script, ": 您的会话已经锁定!请选择\"启动查询\"!", 1);
+					goto endloop;
+				}
+			}
+			//启用工作io
+			{
 
+				work_io_service.post(
+						boost::bind(&CMcast::process_data, shared_from_this(),
+								j_ptr, addr, get_remote_port(), flag));
+
+			}
 		}
-
-		socket_.async_receive_from(
+		endloop: socket_.async_receive_from(
 				boost::asio::buffer(inbound_data_.data(), max_length),
 				sender_endpoint_,
 				boost::bind(&CMcast::handle_receive_from, shared_from_this(),
@@ -765,7 +697,19 @@ void CMcast::handle_receive_from(const boost::system::error_code& error,
 						boost::asio::placeholders::bytes_transferred));
 	}
 }
-
+void CMcast::process_data(JsonMsg_ptr j_ptr, const std::string& addr,
+		const int& port, int flag) {
+	//不在采用总的线程池处理，改用新开线程处理，与线程池分离
+	//发现当脚本调用 tail -f 持续调用时。有无法接受数据的问题，强行关闭tail线程，接受正常
+	//原因可能不在这里
+	/*boost::shared_ptr<boost::thread> thread(
+	 new boost::thread(
+	 boost::bind(print_data, j_ptr, addr, get_remote_port(),
+	 shared_from_this(), flag)));*/
+	workthread_pool_ptr->schedule(
+			boost::bind(print_data, j_ptr, addr, get_remote_port(),
+					shared_from_this(), flag));
+}
 void CMcast::handle_send_to(const boost::system::error_code& error) {
 	if (!error) {
 		timer_.expires_from_now(boost::posix_time::seconds(1));
