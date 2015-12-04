@@ -523,7 +523,7 @@
                 //合并同样主机，同样cmd的结果
                 var msg = new Map();
                 for (var i = 0; i < jmsg.msg.length; i++) {
-                    var key = jmsg.msg[i].host + jmsg.msg[i].cmd + jmsg.msg[i].ip;
+                    var key = jmsg.msg[i].host + jmsg.msg[i].cmd + jmsg.msg[i].ip + jmsg.msg[i].flag;
                     if (msg.get(key) != undefined) {
                         var value = msg.get(key);
                         value.result += jmsg.msg[i].result;

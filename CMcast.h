@@ -62,22 +62,14 @@ public:
 	}
 	int killpid() {
 		int status, retval = 0;
+		//如果进程还在运行，则强制中断
 		if (0 == (waitpid(pid, &status, WNOHANG))) {
 			printf("kill子进程:%d\n", pid);
-			flag = true;
 			retval = kill(pid, SIGKILL);
-
 			if (retval==0) {
 
 				printf("等待子进程(%d)退出\n", pid);
-				do{
-					retval = waitpid(pid, &status, WNOHANG);
-					if(retval ==0)
-					{
-						::usleep(100);
-					}
-				}while(retval==0);
-
+				retval = waitpid(pid, &status, 0);
 				if (WIFEXITED(status)) {
 					printf("exited, status=%d\n", WEXITSTATUS(status));
 				} else if (WIFSIGNALED(status)) {
@@ -94,6 +86,9 @@ public:
 			}
 
 		}
+		//通知调用进程结束
+		printf("子进程:%dend\n", pid);
+		flag = true;
 		return retval;
 	}
 	bool get() {
@@ -157,8 +152,7 @@ private:
 };
 typedef boost::shared_ptr<boost::asio::deadline_timer> timer_ptr;
 typedef boost::shared_ptr<CMcast> CMcast_ptr;
-///*void print_data(const std::string& str, const std::string& addr,
-//		const int& port, CMcast_ptr m_ptr, int flag);*/
+
 void print_data(JsonMsg_ptr j_ptr, const std::string& addr, const int& port,
 		CMcast_ptr m_ptr, int flag);
 #endif /* CMCAST_H_ */

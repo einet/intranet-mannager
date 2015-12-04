@@ -82,12 +82,13 @@ void sig_term(int signo) {
 extern int webmain(const std::string& ip, const std::string& port,
 		const std::string& doc);
 void recv_thread(std::string ipdaar, std::string maddr,const short port) {
-
+//对mcast启用双io处理
 	mcast_r.reset(
 			new CMcast(io_service,
 					boost::asio::ip::address::from_string(ipdaar),
 					boost::asio::ip::address::from_string(maddr),port));
 	mcast_r->start();
+
 	boost::shared_ptr<boost::asio::io_service::work> work(new boost::asio::io_service::work(work_io_service));
 	boost::shared_ptr<boost::thread> thread(
 			new boost::thread(

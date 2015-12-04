@@ -238,7 +238,8 @@ void ztimeout(const boost::system::error_code& error, tmout_ptr m_ptr) {
 void zpidtimeout(const boost::system::error_code& error, tpidmout_ptr m_ptr) {
 	cout << "ztimeout:" << error.message() << endl;
 
-	if (!error) {
+	if (!error)
+	{
 		m_ptr->killpid();
 	}
 }
@@ -253,7 +254,7 @@ void callpid_sh(const std::string& sid, const std::string& script,
 	int fp = 0;
 	pid_t pid = 0;
 
-	char result_buf[2048 * 1024 * 4];
+	char result_buf[2048  * 4];
 
 	int timeout = 50;
 	try {
@@ -262,7 +263,6 @@ void callpid_sh(const std::string& sid, const std::string& script,
 				|| script.find("./package.sh", 0) == 0
 				|| script.find("cat", 0) == 0 || script.find("find", 0) == 0) {
 			timeout = 300;
-
 			pid = popen2(script.c_str(), &infp, &fp);
 		} else {
 
@@ -318,11 +318,24 @@ void callpid_sh(const std::string& sid, const std::string& script,
 								boost::asio::placeholders::error, m_tptr));
 				continue;
 			} else if (r == -1 && errno != EAGAIN) {
+				m_t_p->cancel();
 				close(infp);
 				close(fp);
 				break;
 			}
+			int status = 0;
+			//检查调用的线程是否运行结束
+			if (pid == waitpid(pid, &status, WNOHANG))
+			{
+				printf("子进程:%d,end.\n", pid);
+				m_t_p->cancel();
+				close(infp);
+				close(fp);
+				break;
+			}
+			//检查定时器是否已经启动运行
 			if (m_tptr->get()) {
+				m_t_p->cancel();
 				close(infp);
 				close(fp);
 				break;
@@ -400,89 +413,6 @@ void print_data(JsonMsg_ptr j_ptr, const std::string& addr, const int& port,
 	if (flag != 3)
 		m_sessionID.WriteFunction(msg.str());
 }
-/*void print_data(const std::string& str, const std::string& addr,
- const int& port, CMcast_ptr m_ptr, int flag) {
- if (str.empty())
- return;
- JsonMsg_ptr j_ptr(new JsonMsg());
-
- j_ptr->ParseJson(str);
-
- stringstream msg;
-
- if (flag == 0) {
-
- std::cout << "Recv from: " << j_ptr->GetHost() << " IP " << addr
- << " port:" << port << ", cmd:" << std::endl << j_ptr->GetCmd()
- << std::endl;
- if (j_ptr->invect(hname))
- callpid_sh(j_ptr->sid, j_ptr->GetCmd(), m_ptr);
- else
- std::cout << "[" << hname << "]>(Ctrl+C)" << std::endl;
-
- msg << "{" << "\"sid\":\"" << j_ptr->sid << "\",\"host\":\""
- << j_ptr->GetHost() << "\",\"ip\":\"" << addr
- << "\",\"port\":\"" << port << "\",\"flag\":0,\"cmd\":\""
- << boost::property_tree::json_parser::create_escapes(
- j_ptr->GetCmd()) << "\",\"result\":\""
- << boost::property_tree::json_parser::create_escapes(
- j_ptr->GetCmd()) << "\"}";
-
- } else if (flag == 1) {
-
- std::cout << "Recv from: " << j_ptr->GetHost() << " IP " << addr
- << " port:" << port << ", result:" << std::endl
- << j_ptr->GetResult() << std::endl;
- std::cout << "[" << hname << "]>(Ctrl+C)" << std::endl;
-
- msg << "{" << "\"sid\":\"" << j_ptr->sid << "\",\"host\":\""
- << j_ptr->GetHost() << "\",\"ip\":\"" << addr
- << "\",\"port\":\"" << port << "\",\"flag\":1,\"cmd\":\""
- << boost::property_tree::json_parser::create_escapes(
- j_ptr->GetCmd()) << "\",\"result\":\""
- << boost::property_tree::json_parser::create_escapes(
- j_ptr->GetResult()) << "\"}";
- } else if (flag == 2) {
- std::cout << "Recv from: " << j_ptr->GetHost() << " IP " << addr
- << " port:" << port << ", msg:" << std::endl << "    "
- << j_ptr->GetResult() << std::endl;
-
- msg << "{" << "\"sid\":\"" << j_ptr->sid << "\",\"host\":\""
- << j_ptr->GetHost() << "\",\"ip\":\"" << addr
- << "\",\"port\":\"" << port << "\",\"flag\":2,\"cmd\":\""
- << boost::property_tree::json_parser::create_escapes(
- j_ptr->GetCmd()) << "\",\"result\":\""
- << boost::property_tree::json_parser::create_escapes(
- j_ptr->GetResult()) << "\"}";
-
- std::cout << "[" << hname << ":" << gethoststr() << "]>"
- << "Please input msg(Quit msg(quit)):" << std::endl;
- } else if (flag == 3) {
-
- } else {
- return;
- }
- if (flag != 3)
- m_sessionID.WriteFunction(msg.str());
- if (!j_ptr->GetHost().empty()) {
- bool host = false;
- {
- ReadLock w_lock(ssmapLock);
- map<string, string>::iterator iter = mapHost.find(j_ptr->GetHost());
- if (iter != mapHost.end() && iter->second != addr) {
- host = true;
- }
- if (iter != mapHost.end()) {
- host = true;
- }
- }
- if (host) {
- WriteLock w_lock(ssmapLock);
- mapHost[j_ptr->GetHost()] = addr;
- }
-
- }
- }*/
 
 CMcast::CMcast(boost::asio::io_service& io_service,
 		const boost::asio::ip::address& listen_address,
@@ -680,6 +610,7 @@ void CMcast::handle_receive_from(const boost::system::error_code& error,
 					goto endloop;
 				}
 			}
+
 			//启用工作io
 			{
 
@@ -699,13 +630,7 @@ void CMcast::handle_receive_from(const boost::system::error_code& error,
 }
 void CMcast::process_data(JsonMsg_ptr j_ptr, const std::string& addr,
 		const int& port, int flag) {
-	//不在采用总的线程池处理，改用新开线程处理，与线程池分离
-	//发现当脚本调用 tail -f 持续调用时。有无法接受数据的问题，强行关闭tail线程，接受正常
-	//原因可能不在这里
-	/*boost::shared_ptr<boost::thread> thread(
-	 new boost::thread(
-	 boost::bind(print_data, j_ptr, addr, get_remote_port(),
-	 shared_from_this(), flag)));*/
+
 	workthread_pool_ptr->schedule(
 			boost::bind(print_data, j_ptr, addr, get_remote_port(),
 					shared_from_this(), flag));
