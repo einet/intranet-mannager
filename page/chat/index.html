@@ -583,16 +583,8 @@
                             for (var x = 0; x < page.length; x++) {
                                 var dir = page[x].split(/( )+/);
                                 if (page[x].length > 0 && dir.length >= 17) {
-
-                                    var ti = dir.length - 16;
-                                    var strtmp = "";
-                                    if (ti == 1)
-                                        strtmp = dir[dir.length - 1];
-                                    else {
-                                        for (i = 0; i < ti; i++) {
-                                            strtmp += dir[i + 16];
-                                        }
-                                    }
+                                    var iar = page[x].indexOf(dir[16]);
+                                    var strtmp = page[x].substr(iar);
                                     if (dir[0].charAt(0) == 'd') {
                                         var path = infoArray[j].cmd.replace(/ls -all/, "").trim();
                                         if (pos = path.search("/logs/olalog") > 0 && strtmp != "." && strtmp != "..")

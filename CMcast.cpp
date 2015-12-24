@@ -279,7 +279,7 @@ void callpid_sh(const std::string& sid, const std::string& script,
 		}
 
 		int d = fp;
-
+		//设置非阻塞模式读取信息，保证信息的快速读取
 		int flags;
 		flags = fcntl(d, F_GETFL);
 		flags |= O_NONBLOCK;
@@ -287,6 +287,7 @@ void callpid_sh(const std::string& sid, const std::string& script,
 		ssize_t r = 0;
 		std::cout << "Recv cmd:" << script << ",pid:" << pid << std::endl;
 		while (true) {
+		//是否接收到全局的停止信号，防止用户持续调用后，忘记关闭（例如 tail -f之类的操作）
 			if (m_sessionID.GetUnlock()) {
 				std::cout << " Recv unlock sig!" << script << "pid:" << pid
 						<< std::endl;
@@ -296,6 +297,7 @@ void callpid_sh(const std::string& sid, const std::string& script,
 				m_tptr->killpid();
 				break;
 			}
+			//是否接受到用户的停止信号
 			if (m_sessionID.GetKillFlag(sid)) {
 				std::cout << " Recv kill sig!" << script << "pid:" << pid
 						<< std::endl;
@@ -310,7 +312,9 @@ void callpid_sh(const std::string& sid, const std::string& script,
 
 			if (r > 0) {
 				result_buf[r] = '\0';
+				//通过组播发送信息
 				m_ptr->send_to(sid, script, result_buf, 1);
+				//接受到数据重新设置定时器超时时间
 				m_t_p->cancel();
 				m_t_p->expires_from_now(boost::posix_time::seconds(timeout));
 				m_t_p->async_wait(
@@ -318,6 +322,7 @@ void callpid_sh(const std::string& sid, const std::string& script,
 								boost::asio::placeholders::error, m_tptr));
 				continue;
 			} else if (r == -1 && errno != EAGAIN) {
+			//取消定时器，结束读取
 				m_t_p->cancel();
 				close(infp);
 				close(fp);
@@ -341,6 +346,7 @@ void callpid_sh(const std::string& sid, const std::string& script,
 				break;
 			}
 			if (errno == EAGAIN) {
+			//暂时没有数据，可以继续等待，直到有数据或者定时器超时
 				continue;
 			}
 
@@ -566,10 +572,12 @@ void CMcast::handle_receive_from(const boost::system::error_code& error,
 								boost::asio::placeholders::bytes_transferred));
 				return;
 			}
+			//检查是否需要运行该命令
 			if (j_ptr->invect(hname) && flag == 0) {
 				string script = j_ptr->cmdString;
 				string sid = j_ptr->sid;
 				std::cout << "Recv a script:" << script << std::endl;
+				//设置主机
 				if (script.find("set host ") != string::npos) {
 					string cmd = script.substr(9);
 					boost::algorithm::trim(cmd);
@@ -580,7 +588,9 @@ void CMcast::handle_receive_from(const boost::system::error_code& error,
 					}
 					//m_ptr->send_to(sid, script, script + ": set ok!", 1);
 					goto endloop;
-				} else if (script.find("clear all") != string::npos) {
+				}
+				//清除主机列表和缓存				
+				else if (script.find("clear all") != string::npos) {
 					m_sessionID.Clear();
 					//m_ptr->send_to(sid, script, script + ": set ok!", 1);
 					goto endloop;
@@ -656,6 +666,7 @@ void CMcast::handle_send(const boost::system::error_code& error) {
 		std::cout << "send suc!" << std::endl;
 	}
 }
+//发送组播信息
 void CMcast::send_to(const string & sid, const string & cmd, std::string msg,
 		int flag) {
 	std::ostringstream header_stream;
@@ -683,6 +694,7 @@ void CMcast::send_to(const string & sid, const string & cmd, std::string msg,
 	msg = m_json->GetJsonString();
 	size_t st = 0;
 	std::string zipmsg;
+	//压缩处理
 	{
 		filtering_istream os;
 		m_zipptr->GzipFromData((char*) msg.c_str(), (const int) msg.size(), os);
@@ -754,7 +766,7 @@ void CMcast::send_to(std::string msg, int flag) {
 			}
 		}
 	}
-
+	//简单的协议：长度8：消息长度；长度8：消息类型；消息
 	header_stream << std::setw(header_length) << std::hex << st
 			<< std::setw(header_length) << std::hex << flag;
 	outbound_header_ = header_stream.str();
