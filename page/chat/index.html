@@ -99,6 +99,26 @@
     <script type="text/javascript">
         var showdinfonum = 0;
         var showdinfonum_for = 0;
+        //查看爬虫状态
+        function clawerstatus() {
+            tmsg = "curl -s http://172.16.10.16:8088/DataImport/StatusReport";
+
+            $.post("/chat/sendmsg.asp", $.toJSON({ sendmsg: "set host clear" }), function (result) {
+
+                $.post("/chat/sendmsg.asp", $.toJSON({ sendmsg: "set host esurfing" }), function (result) {
+                    $.post("sendmsg.asp", $.toJSON({ sendmsg: tmsg.trim() }), function (result) {
+                        if ($.cookie('sethostname').length > 0) {
+                            $.post("/chat/sendmsg.asp", $.toJSON({ sendmsg: "set host " + $.cookie('sethostname') }), function (result) {
+
+                            });
+                        }
+
+                        $.cookie('sid', jmsg.id, { expires: 24 * 60 * 60 });
+                    });
+                });
+            });
+        }
+
         function showdetailinfo(i) {
             $('#userlistinfo' + i).toggle();
         }
@@ -436,7 +456,6 @@
             $("#dialog_query_knowledge").dialog(dialogOptions).dialogExtend(dialogExtendOptions);
 
         }
-
         function Package(hostname, filename) {
             tmsg = "./package.sh " + filename;
             alert(tmsg);
@@ -915,6 +934,8 @@
                     });
                 });
             });
+
+            
             //knowledgesubmit
             // curl  -s  http://172.16.10.42/KnowledgeService2/queryv2?keyword1=%E6%AD%A6%E6%B1%89\&keyword2=.com
             function k_submit() {
@@ -1015,6 +1036,7 @@
                     <h3>其他查询</h3>
                     <ul>
                         <li><a href="javascript:void(0)" onclick='openquerykdialog()'>知识库查询</a></li>
+                        <li><a href="javascript:void(0)" onclick='clawerstatus()'>爬虫状态</a></li>
                     </ul>
                 </div>
                 <div class="col_1">
