@@ -639,7 +639,7 @@
                             for (var x = 0; x < page.length; x++) {
                                 var dir = page[x].split(/( )+/);
                                 if (page[x].length > 0 && dir.length >= 17) {
-                                    var iar = page[x].indexOf(dir[16]);
+                                    var iar = page[x].lastIndexOf(dir[16]);
                                     var strtmp = page[x].substr(iar);
                                     if (dir[0].charAt(0) == 'd') {
                                         var path = infoArray[j].cmd.replace(/ls -all/, "").trim();
