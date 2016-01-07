@@ -1,1 +1,154 @@
-var flare_data={"name":"Ola Voice服务系统","done":false,"id":160,"collapsed":false,"x0":410,"y0":0,"children":[{"name":"对话系统服务","done":false,"children":[{"name":"对话系统","done":false,"id":102,"collapsed":false,"children":[{"name":"dls80_s","ip":"172.16.10.47","done":false,"id":100,"collapsed":false},{"name":"dls80","ip":"172.16.10.66","done":false,"id":101,"collapsed":false}]},{"name":"对话8000","done":false,"id":104,"collapsed":false,"children":[{"name":"dls8000","ip":"172.16.10.62","done":false,"id":103,"collapsed":false}]},{"name":"对话展示","done":false,"id":124,"collapsed":false,"children":[{"name":"金甲卫队","done":false,"children":[{"ip":"172.16.10.90","name":"CarBuddy","done":false,"id":105,"collapsed":false}],"id":106,"collapsed":false},{"name":"无屏服务","done":false,"children":[{"ip":"172.16.10.102","name":"3nod","done":false,"id":107,"collapsed":false},{"ip":"172.16.10.92","name":"noscreen","done":false,"id":108,"collapsed":false}],"id":109,"collapsed":false},{"ip":"172.16.10.84","name":"bmw","done":false,"id":110,"collapsed":false},{"ip":"172.16.10.80","name":"huanxun","done":false,"id":111,"collapsed":false},{"name":"中兴服务","done":false,"children":[{"ip":"172.16.10.99","name":"zte_backup","done":false,"id":112,"collapsed":false},{"ip":"172.16.10.96","name":"zte","done":false,"id":113,"collapsed":false}],"id":114,"collapsed":false},{"ip":"172.16.10.95","name":"qihuglass","done":false,"id":115,"collapsed":false},{"ip":"172.16.10.74","name":"supernotes","done":false,"id":116,"collapsed":false},{"name":"华为服务","done":false,"children":[{"ip":"172.16.10.70","name":"huawei","done":false,"id":117,"collapsed":false},{"ip":"172.16.10.60","name":"NuanceHuawei","done":false,"id":118,"collapsed":false}],"id":119,"collapsed":false},{"name":"铂钰","done":false,"id":121,"collapsed":false,"children":[{"ip":"172.16.10.100","name":"boyu","done":false,"id":120,"collapsed":false}]},{"name":"号百","done":false,"id":123,"collapsed":false,"children":[{"ip":"172.16.10.101","name":"haobaiweixin","done":false,"id":122,"collapsed":false}]}]}],"id":125,"collapsed":false},{"name":"其它服务","done":false,"id":143,"collapsed":false,"children":[{"name":"备份服务器","done":false,"children":[{"ip":"172.16.10.18","name":"store.olavoice.com","done":false,"id":126,"collapsed":false}],"id":127,"collapsed":false},{"name":"主页服务","done":false,"children":[{"ip":"172.16.10.32","name":"web.olavoice.com","done":false,"id":128,"collapsed":false}],"id":129,"collapsed":false},{"name":"ftp服务","done":false,"children":[{"ip":"172.16.10.33","name":"ftp.olavoice.com","done":false,"id":130,"collapsed":false}],"id":131,"collapsed":false},{"name":"mysql数据库服务","done":false,"children":[{"ip":"172.16.10.34","name":"mysql","done":false,"id":132,"collapsed":false}],"id":133,"collapsed":false},{"name":"邮件服务","done":false,"children":[{"ip":"172.16.10.31","name":"mail.olavoice.com","done":false,"id":134,"collapsed":false}],"id":135,"collapsed":false},{"name":"统计服务","done":false,"id":137,"collapsed":false,"children":[{"ip":"172.16.10.76","name":"tongji","done":false,"id":136,"collapsed":false}]},{"name":"olacloud服务","done":false,"id":140,"collapsed":false,"children":[{"ip":"172.16.10.68","name":"olacloud","done":false,"id":138,"collapsed":false},{"ip":"172.16.10.82","name":"olacloudtest","done":false,"id":139,"collapsed":false}]},{"name":"推送服务","done":false,"id":142,"collapsed":false,"children":[{"ip":"172.16.10.88","name":"imgsvr_olapush","done":false,"id":141,"collapsed":false}]}]},{"name":"语音识别服务","done":false,"children":[{"ip":"172.16.10.97","name":"asrserver","done":false,"id":144,"collapsed":false}],"id":145,"collapsed":false},{"name":"爬虫服务","done":false,"id":147,"collapsed":false,"children":[{"name":"crawler.olavoice.com","ip":"172.16.10.17","done":false,"id":146,"collapsed":false}]},{"name":"声纹识别","done":false,"id":149,"collapsed":false,"children":[{"ip":"172.16.10.75","name":"voiceprint","done":false,"id":148,"collapsed":false}]},{"name":"知识库","done":false,"id":151,"collapsed":false,"children":[{"ip":"172.16.10.42","name":"knowledge","done":false,"id":150,"collapsed":false}]},{"name":"其它对话系统","done":false,"children":[{"ip":"172.16.10.98","name":"smarthome","done":false,"id":152,"collapsed":false},{"ip":"172.16.10.86","name":"wenyiwen","done":false,"id":153,"collapsed":false},{"ip":"172.16.10.45","name":"esurfing","done":false,"id":154,"collapsed":false},{"ip":"172.16.10.94","name":"dianxinyp","done":false,"id":155,"collapsed":false},{"ip":"172.16.10.64","name":"bankdemo","done":false,"id":156,"collapsed":false},{"ip":"172.16.10.49","name":"noscreen_backup","done":false,"id":157,"collapsed":false},{"ip":"172.16.10.78","name":"mondelez","done":false,"id":158,"collapsed":false}],"id":159,"collapsed":false}]};
+var flare_data={
+  "name": "linux集群服务系统",
+  "done": false,
+  "id": 160,
+  "collapsed": false,
+  "x0": 410,
+  "y0": 0,
+  "children": [
+    {
+      "name": "系统服务",
+      "done": false,
+      "children": [
+        {
+          "name": "web系统",
+          "done": false,
+          "id": 102,
+          "collapsed": false,
+          "children": [
+            {
+              "name": "主页服务",
+              "ip": "172.16.11.12",
+              "done": false,
+              "id": 100,
+              "collapsed": false
+            },
+            {
+              "name": "图片服务",
+              "ip": "172.16.11.6",
+              "done": false,
+              "id": 101,
+              "collapsed": false
+            }
+          ]
+        },
+        {
+          "name": "文件服务",
+          "done": false,
+          "id": 104,
+          "collapsed": false,
+          "children": [
+            {
+              "name": "dls8000",
+              "ip": "172.16.1.62",
+              "done": false,
+              "id": 103,
+              "collapsed": false
+            }
+          ]
+        }
+      ],
+      "id": 125,
+      "collapsed": false
+    },
+    {
+      "name": "支撑服务",
+      "done": false,
+      "id": 143,
+      "collapsed": false,
+      "children": [
+        {
+          "name": "备份服务器",
+          "done": false,
+          "children": [
+            {
+              "ip": "172.16.10.118",
+              "name": "store",
+              "done": false,
+              "id": 126,
+              "collapsed": false
+            }
+          ],
+          "id": 127,
+          "collapsed": false
+        },
+        {
+          "name": "ftp服务",
+          "done": false,
+          "children": [
+            {
+              "ip": "172.16.11.33",
+              "name": "ftp.olavoice.com",
+              "done": false,
+              "id": 130,
+              "collapsed": false
+            }
+          ],
+          "id": 131,
+          "collapsed": false
+        },
+        {
+          "name": "mysql数据库服务",
+          "done": false,
+          "children": [
+            {
+              "ip": "172.16.11.134",
+              "name": "mysql",
+              "done": false,
+              "id": 132,
+              "collapsed": false
+            }
+          ],
+          "id": 133,
+          "collapsed": false
+        },
+        {
+          "name": "邮件服务",
+          "done": false,
+          "children": [
+            {
+              "ip": "172.16.11.131",
+              "name": "mail",
+              "done": false,
+              "id": 134,
+              "collapsed": false
+            }
+          ],
+          "id": 135,
+          "collapsed": false
+        },
+        {
+          "name": "统计服务",
+          "done": false,
+          "id": 137,
+          "collapsed": false,
+          "children": [
+            {
+              "ip": "172.16.11.176",
+              "name": "tongji",
+              "done": false,
+              "id": 136,
+              "collapsed": false
+            }
+          ]
+        }
+        ]
+    },
+    {
+      "name": "数据系统",
+      "done": false,
+      "children": [
+        {
+          "ip": "172.16.11.81",
+          "name": "mongodb",
+          "done": false,
+          "id": 152,
+          "collapsed": false
+        }
+
+      ],
+      "id": 159,
+      "collapsed": false
+    }
+  ]
+};
